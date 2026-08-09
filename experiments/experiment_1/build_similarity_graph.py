@@ -20,26 +20,16 @@ import numpy as np
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DEFAULT_THRESHOLD = 0.75
 GRAPH_NUMERIC_FIELDS = (
-    "original_loss",
-    "unlearned_loss",
-    "out_shadow_mean",
-    "unlearn_shadow_mean",
+    "privacy_observed_loss",
+    "efficacy_observed_loss",
     "privacy_score",
     "efficacy_score",
     "privacy_label",
     "efficacy_label",
-    "loss_change",
-    "efficacy_out_shadow_mean",
-    "out_shadow_count",
-    "unlearn_shadow_count",
-    "efficacy_out_shadow_count",
 )
 INTEGER_GRAPH_FIELDS = {
     "privacy_label",
     "efficacy_label",
-    "out_shadow_count",
-    "unlearn_shadow_count",
-    "efficacy_out_shadow_count",
 }
 
 

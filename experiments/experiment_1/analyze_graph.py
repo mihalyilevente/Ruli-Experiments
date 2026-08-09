@@ -22,9 +22,8 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DEFAULT_TARGETS = (
     "privacy_score",
     "efficacy_score",
-    "original_loss",
-    "unlearned_loss",
-    "loss_change",
+    "privacy_observed_loss",
+    "efficacy_observed_loss",
 )
 GRAPH_FEATURES = (
     "degree",

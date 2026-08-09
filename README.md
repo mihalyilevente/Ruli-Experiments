@@ -19,6 +19,10 @@ RULI is not installed or copied into this repository. Experiment scripts accept
 paths to its saved artifacts. This avoids relying on RULI's working-directory-based
 internal imports and keeps upstream changes separate from research changes.
 
+Experiment 1 includes a small observability-only patch under `patches/`. It adds an
+opt-in sample export to the official inference run without changing training,
+unlearning, dataset selection, KDE calculations, or attack decisions.
+
 ## Setup
 
 Create a dedicated environment from this directory:

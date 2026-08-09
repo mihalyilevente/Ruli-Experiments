@@ -1,52 +1,68 @@
 # Experiment 1: semantic structure and sample-level RULI
 
-`export_ruli_scores.py` reads existing shadow outputs and saved target-model
-checkpoints. It performs inference only; it does not train, unlearn, or modify the
-official RULI implementation.
+The score export is captured directly inside the official RULI evaluation. It does
+not reload checkpoints, repeat model inference, or recalculate a KDE likelihood
+ratio.
 
-Run it from the repository root:
+## Capture the official per-sample values
+
+Apply the observability-only patch to a clean or compatible RULI checkout:
+
+```bash
+git -C ../Ruli apply ../Ruli-experiments/patches/ruli_sample_capture.patch
+```
+
+The patch adds one optional argument to `text/mia_inference.py` and copies values
+already present in the privacy and efficacy `evaluate_with_kde` loops. It does not
+change training, unlearning, dataset selection, inference losses, KDE construction,
+likelihood ratios, labels, thresholds, or returned metrics.
+
+Run the same official 9-shadow command that produced the reference metrics, adding
+only the export path:
+
+```bash
+cd ../Ruli/text
+python mia_inference.py \
+  --shadow_path ../core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target_data_path ./data/WikiText-103-local/gpt2/selective_dataset_prefixed \
+  --unlearn_method npo \
+  --sft_epochs 5 \
+  --unlearn_epochs 15 \
+  --prefix_epochs 1 \
+  --sample_export_path ../../Ruli-experiments/experiments/experiment_1/results/official_ruli_samples.pth
+```
+
+All ordinary arguments must remain identical to the reference run. The new file
+stores each evaluated sample ID, observed loss, label, KDE likelihood ratio, and the
+positive/negative shadow observations passed to that exact KDE.
+
+## Convert the direct capture to CSV
+
+From the experiment repository, decode the corresponding text and verify metrics:
 
 ```bash
 python experiments/experiment_1/export_ruli_scores.py \
-  --shadow-path ../Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --capture-path experiments/experiment_1/results/official_ruli_samples.pth \
   --target-data-path ../Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed \
-  --original-checkpoint ../Ruli/path/to/original-checkpoint \
-  --unlearned-checkpoint ../Ruli/path/to/unlearned-checkpoint \
-  --device cuda:0
+  --tokenizer gpt2
 ```
 
-All RULI paths are inputs and may point to a sibling checkout, a mounted RunPod
-volume, or downloaded artifacts. Nothing is imported from or written into the RULI
-source tree.
+The default verification requires the exported rows to reproduce the official
+9-shadow AUCs at the reported precision: privacy `0.8531` and efficacy `0.8589`.
+It also reconstructs all official metrics from the captured labels and likelihood
+ratios and requires them to match the metrics returned during the same run. Use
+`--no-verify-expected-aucs` only for a deliberately non-reference smoke run.
 
-The default output is `results/ruli_scores.csv` in this directory. The default ID
-slices reproduce the official text evaluation: sorted IDs 200--399 are UNLEARN and
-400--599 are OUT. Override them with `--unlearn-start`, `--unlearn-count`,
-`--out-start`, and `--out-count` when a run used different slices.
+The output `results/ruli_scores.csv` includes both UNLEARN and OUT groups. The score
+columns are the exact captured KDE likelihood ratios. Privacy uses
+`unlearn_unlearned` versus `out_unlearned`; efficacy uses `unlearn_unlearned` versus
+`out_original`. Each distribution is stored as a JSON array in the CSV, and
+`results/ruli_scores.metrics.json` records the verification and artifact hashes.
 
-The export contains both evaluation groups so its metrics can be checked against the
-official attack. For graph correlations on the forget set, filter to
-`split == "unlearn"`.
-
-## Score definitions
-
-- `privacy_score`: target loss under the unlearned model, scored against
-  `unlearn_unlearned` (positive) and `out_unlearned` (negative) per-sample KDEs.
-- `efficacy_score`: the UNLEARN target loss under the unlearned model, or the OUT
-  target loss under the original model, scored against `unlearn_unlearned`
-  (positive) and `out_original` (negative) per-sample KDEs.
-- `out_shadow_mean`: mean of `out_unlearned`, the privacy OUT reference requested
-  for the initial CSV schema.
-- `efficacy_out_shadow_mean`: mean of `out_original`, included because the official
-  efficacy attack uses a different OUT reference.
-- `loss_change`: `unlearned_loss - original_loss`.
-- `split`: `unlearn` or `out`; both attack labels are 1 for UNLEARN and 0 for OUT.
-
-The script prints AUC, accuracy, TPR@1%FPR, and TPR@5%FPR reconstructed from the
-exported scores. These are an immediate check that the CSV matches the saved run.
-Per-sample KDE needs at least two non-singular observations in each condition. For
-incomplete smoke-test shadow files, `--kde-error nan` exports available values and
-writes unavailable scores as NaN instead of stopping.
+The official execution does not compute original-model losses for the UNLEARN
+samples. Consequently this direct export intentionally does not contain
+`original_loss` or `loss_change`; adding them would require extra inference and would
+violate the direct-capture requirement.
 
 ## Build semantic embeddings
 
@@ -161,6 +177,6 @@ Exact betweenness is the default. For a large graph, use
 `--betweenness-samples 200` to request a seeded approximation. Community detection
 uses cosine edge weights by default; `--unweighted-communities` uses topology only.
 
-These results are correlational. Threshold sensitivity, multiple testing, original
+These results are correlational. Threshold sensitivity, multiple testing, observed
 loss, text length, and other confounders must be considered before treating a graph
 association as evidence that semantic dependency causes unlearning difficulty.
