@@ -1,0 +1,139 @@
+diff --git a/text/mia_inference.py b/text/mia_inference.py
+index 851d5be..227e97b 100644
+--- a/text/mia_inference.py
++++ b/text/mia_inference.py
+@@ -8,6 +8,7 @@ from utils import MIAEvaluator, EfficacyEvaluator
+ from utils import train_sft, unlearn_model, train_prefix
+ from utils import load_data
+ import copy
++from pathlib import Path
+ import warnings
+ warnings.filterwarnings("ignore", category=UserWarning)
+ warnings.filterwarnings("ignore", category=FutureWarning)
+@@ -27,6 +28,7 @@ def main():
+     parser.add_argument('--attack_size', type=int, default=15000)
+     parser.add_argument('--prefix_epochs', type=int, default=1)
+     parser.add_argument('--FT_epochs', type=int, default=2)
++    parser.add_argument('--sample_export_path', type=str, default=None)
+ 
+ 
+ 
+@@ -93,14 +95,15 @@ def main():
+         args=args
+     )
+ 
+-    results = evaluator.run(
++    privacy_results = evaluator.run(
+         shadow_results=shadow_results,
+         out_ids=out_ids,
+         unlearn_ids=unlearn_ids
+     )
++    privacy_sample_records = evaluator.last_kde_records
+ 
+     print("\n=== MIA Evaluation Metrics ===")
+-    for k, v in results.items():
++    for k, v in privacy_results.items():
+         print(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}")
+ 
+     print("[INFO] MIA evaluation completed.")
+@@ -115,15 +118,36 @@ def main():
+         args=args
+     )
+ 
+-    results = evaluator.run(
++    efficacy_results = evaluator.run(
+         shadow_results=shadow_results,
+         out_ids=out_ids,
+         unlearn_ids=unlearn_ids
+     )
++    efficacy_sample_records = evaluator.last_kde_records
+     print("\n=== Efficacy Evaluation Metrics ===")
+-    for k, v in results.items():
++    for k, v in efficacy_results.items():
+         print(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}")
+ 
++    if args.sample_export_path:
++        export_path = Path(args.sample_export_path)
++        export_path.parent.mkdir(parents=True, exist_ok=True)
++        torch.save({
++            'schema_version': 1,
++            'privacy': {
++                'positive_shadow_condition': 'unlearn_unlearned',
++                'negative_shadow_condition': 'out_unlearned',
++                'metrics': privacy_results,
++                'samples': privacy_sample_records,
++            },
++            'efficacy': {
++                'positive_shadow_condition': 'unlearn_unlearned',
++                'negative_shadow_condition': 'out_original',
++                'metrics': efficacy_results,
++                'samples': efficacy_sample_records,
++            },
++        }, export_path)
++        print(f"[INFO] Saved per-sample evaluation values to {export_path}")
++
+ 
+ 
+ 
+diff --git a/text/utils.py b/text/utils.py
+index e0e914a..d3e99c7 100644
+--- a/text/utils.py
++++ b/text/utils.py
+@@ -331,6 +331,8 @@ class MIAEvaluator:
+ 
+         likelihood_ratios = []
+         labels = []
++        capture_samples = bool(getattr(self.args, 'sample_export_path', None))
++        self.last_kde_records = []
+ 
+         # Combine all samples into one list
+         all_ids = unlearn_ids + out_ids
+@@ -350,6 +352,19 @@ class MIAEvaluator:
+ 
+             likelihood_ratios.append(ratio)
+             labels.append(label)
++            if capture_samples:
++                self.last_kde_records.append({
++                    'sample_id': int(idx),
++                    'observed_loss': float(loss),
++                    'label': int(label),
++                    'likelihood_ratio': float(ratio),
++                    'positive_shadow_distribution': [
++                        float(value) for value in shadow_in[idx]
++                    ],
++                    'negative_shadow_distribution': [
++                        float(value) for value in shadow_out[idx]
++                    ],
++                })
+ 
+ 
+         # Compute evaluation metrics
+@@ -488,6 +503,8 @@ class EfficacyEvaluator:
+ 
+         likelihood_ratios = []
+         labels = []
++        capture_samples = bool(getattr(self.args, 'sample_export_path', None))
++        self.last_kde_records = []
+ 
+         # Combine all samples into one list
+         all_ids = unlearn_ids + out_ids
+@@ -507,6 +524,19 @@ class EfficacyEvaluator:
+ 
+             likelihood_ratios.append(ratio)
+             labels.append(label)
++            if capture_samples:
++                self.last_kde_records.append({
++                    'sample_id': int(idx),
++                    'observed_loss': float(loss),
++                    'label': int(label),
++                    'likelihood_ratio': float(ratio),
++                    'positive_shadow_distribution': [
++                        float(value) for value in shadow_in[idx]
++                    ],
++                    'negative_shadow_distribution': [
++                        float(value) for value in shadow_out[idx]
++                    ],
++                })
+ 
+ 
+         # Compute evaluation metrics
