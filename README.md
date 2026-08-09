@@ -37,6 +37,7 @@ scripts here.
 ## Experiments
 
 - [Experiment 1](experiments/experiment_1/README.md): export per-sample RULI scores
-  and losses as the input to embedding and semantic-graph analysis.
+  and losses, build aligned semantic embeddings, construct the similarity graph,
+  and analyze graph structure against RULI outcomes.
 
 Generated data, checkpoints, and results are excluded from version control.
