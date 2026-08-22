@@ -68,7 +68,8 @@ this repository, point it at the shadow file from the official run:
 
 ```bash
 python experiments/experiment_1/export_retain_corpus.py \
-  --shadow-path ../Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth
+  --shadow-path ../Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700
 ```
 
 The reference configuration writes 15,200 aligned JSONL rows (200 target IN rows
