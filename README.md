@@ -12,7 +12,7 @@ Keep both repositories as siblings:
 ```text
 Research/
 ├── Ruli/                  # upstream implementation and generated artifacts
-└── Ruli-experiments/      # this repository
+└── Ruli-Experiments/      # this repository
 ```
 
 RULI is not installed or copied into this repository. Experiment scripts accept
@@ -26,10 +26,10 @@ unlearning, dataset selection, KDE calculations, or attack decisions.
 ## Recommended RunPod/Linux setup
 
 With the repositories checked out as `/workspace/Ruli` and
-`/workspace/Ruli-experiments`, run:
+`/workspace/Ruli-Experiments`, run:
 
 ```bash
-cd /workspace/Ruli-experiments
+cd /workspace/Ruli-Experiments
 bash scripts/setup_ruli_env.sh
 source /workspace/Ruli/.venv/bin/activate
 ```
