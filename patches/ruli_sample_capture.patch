@@ -1,8 +1,18 @@
 diff --git a/text/mia_inference.py b/text/mia_inference.py
-index 851d5be..227e97b 100644
+index 851d5be..3701395 100644
 --- a/text/mia_inference.py
 +++ b/text/mia_inference.py
-@@ -8,6 +8,7 @@ from utils import MIAEvaluator, EfficacyEvaluator
+@@ -1,18 +1,161 @@
+ import argparse
++import json
++import math
+ import random
+ import torch
+ from datasets import load_from_disk
++from sklearn.metrics import accuracy_score, auc, roc_curve
+ from transformers import AutoTokenizer, AutoModelForCausalLM
+ from torch.utils.data import Subset, ConcatDataset
+ from utils import MIAEvaluator, EfficacyEvaluator
  from utils import train_sft, unlearn_model, train_prefix
  from utils import load_data
  import copy
@@ -10,15 +20,166 @@ index 851d5be..227e97b 100644
  import warnings
  warnings.filterwarnings("ignore", category=UserWarning)
  warnings.filterwarnings("ignore", category=FutureWarning)
-@@ -27,6 +28,7 @@ def main():
+ 
+ 
++def _plain_metrics(metrics):
++    return {
++        name: int(value) if name == 'Total' else float(value)
++        for name, value in metrics.items()
++    }
++
++
++def _metrics_from_exported_rows(rows, score_field):
++    labels = [row['label'] for row in rows]
++    scores = [row[score_field] for row in rows]
++    fpr, tpr, _ = roc_curve(labels, scores)
++    return {
++        'AUC': float(auc(fpr, tpr)),
++        'ACC': float(accuracy_score(labels, [score > 0.5 for score in scores])),
++        'Total': len(labels),
++    }
++
++
++def _export_per_sample_results(
++        output_path, target_dataset, tokenizer, privacy_records,
++        efficacy_records, privacy_metrics, efficacy_metrics):
++    privacy_by_id = {record['sample_id']: record for record in privacy_records}
++    efficacy_by_id = {record['sample_id']: record for record in efficacy_records}
++    if set(privacy_by_id) != set(efficacy_by_id):
++        raise ValueError(
++            "Privacy and efficacy evaluated different sample IDs; refusing to "
++            "write a misaligned per-sample export."
++        )
++
++    rows = []
++    for privacy_record in privacy_records:
++        sample_id = privacy_record['sample_id']
++        efficacy_record = efficacy_by_id[sample_id]
++        if privacy_record['label'] != efficacy_record['label']:
++            raise ValueError(f"Privacy/efficacy label mismatch for sample {sample_id}.")
++        if (privacy_record['positive_shadow_distribution'] !=
++                efficacy_record['positive_shadow_distribution']):
++            raise ValueError(
++                f"Privacy/efficacy unlearn_unlearned observations differ for "
++                f"sample {sample_id}."
++            )
++
++        target_sample = target_dataset[sample_id]
++        token_ids = [int(token_id) for token_id in target_sample['input_ids']]
++        text = target_sample.get('text')
++        if text is None:
++            text = tokenizer.decode(
++                token_ids,
++                skip_special_tokens=False,
++                clean_up_tokenization_spaces=False,
++            )
++        rows.append({
++            'sample_id': sample_id,
++            'split': 'unlearn' if privacy_record['label'] == 1 else 'out',
++            'label': privacy_record['label'],
++            'text': text,
++            'token_ids': token_ids,
++            'privacy_observed_target_loss': privacy_record['observed_loss'],
++            'efficacy_observed_target_loss': efficacy_record['observed_loss'],
++            'privacy_kde_likelihood_ratio_score': (
++                privacy_record['likelihood_ratio']
++            ),
++            'efficacy_kde_likelihood_ratio_score': (
++                efficacy_record['likelihood_ratio']
++            ),
++            'shadow_observations': {
++                'unlearn_unlearned': (
++                    privacy_record['positive_shadow_distribution']
++                ),
++                'out_unlearned': privacy_record['negative_shadow_distribution'],
++                'out_original': efficacy_record['negative_shadow_distribution'],
++            },
++        })
++
++    output_path = Path(output_path)
++    output_path.parent.mkdir(parents=True, exist_ok=True)
++    payload = {
++        'schema_version': 1,
++        'source': 'official text/mia_inference.py evaluator execution',
++        'official_metrics': {
++            'privacy': _plain_metrics(privacy_metrics),
++            'efficacy': _plain_metrics(efficacy_metrics),
++        },
++        'shadow_conditions': {
++            'privacy': ['unlearn_unlearned', 'out_unlearned'],
++            'efficacy': ['unlearn_unlearned', 'out_original'],
++        },
++        'rows': rows,
++    }
++    with output_path.open('w', encoding='utf-8') as output_file:
++        json.dump(payload, output_file, indent=2, allow_nan=False)
++        output_file.write('\n')
++
++    # Reload the artifact so the sanity check covers the values actually written.
++    with output_path.open('r', encoding='utf-8') as input_file:
++        exported_rows = json.load(input_file)['rows']
++    recomputed = {
++        'privacy': _metrics_from_exported_rows(
++            exported_rows, 'privacy_kde_likelihood_ratio_score'
++        ),
++        'efficacy': _metrics_from_exported_rows(
++            exported_rows, 'efficacy_kde_likelihood_ratio_score'
++        ),
++    }
++    for attack_name, official in (
++            ('privacy', privacy_metrics), ('efficacy', efficacy_metrics)):
++        for metric_name in ('AUC', 'ACC'):
++            if not math.isclose(
++                    recomputed[attack_name][metric_name],
++                    float(official[metric_name]),
++                    rel_tol=0.0,
++                    abs_tol=1e-12):
++                raise ValueError(
++                    f"Exported rows do not reproduce official {attack_name} "
++                    f"{metric_name}: exported="
++                    f"{recomputed[attack_name][metric_name]}, "
++                    f"official={official[metric_name]}."
++                )
++        if recomputed[attack_name]['Total'] != int(official['Total']):
++            raise ValueError(
++                f"Exported rows do not reproduce official {attack_name} Total."
++            )
++
++    payload['aggregate_metrics_recomputed_from_exported_rows'] = recomputed
++    payload['sanity_check'] = 'passed'
++    with output_path.open('w', encoding='utf-8') as output_file:
++        json.dump(payload, output_file, indent=2, allow_nan=False)
++        output_file.write('\n')
++
++    print(f"[INFO] Saved {len(rows)} per-sample rows to {output_path}")
++    print(
++        "[VERIFY] Exported rows reproduce official metrics: "
++        f"Privacy AUC={recomputed['privacy']['AUC']:.4f}, "
++        f"ACC={recomputed['privacy']['ACC']:.4f}; "
++        f"Efficacy AUC={recomputed['efficacy']['AUC']:.4f}, "
++        f"ACC={recomputed['efficacy']['ACC']:.4f}"
++    )
++
++
+ def main():
+     parser = argparse.ArgumentParser()
+     #parser.add_argument('--model_name', type=str, default='EleutherAI/pythia-70m-deduped')
+@@ -27,6 +170,14 @@ def main():
      parser.add_argument('--attack_size', type=int, default=15000)
      parser.add_argument('--prefix_epochs', type=int, default=1)
      parser.add_argument('--FT_epochs', type=int, default=2)
-+    parser.add_argument('--sample_export_path', type=str, default=None)
++    parser.add_argument(
++        '--per_sample_output', '--sample_export_path',
++        dest='per_sample_output', type=str, default=None,
++        help=(
++            'Optional JSON path for values captured directly from the official '
++            'privacy and efficacy evaluator executions.'
++        ),
++    )
  
  
  
-@@ -93,14 +95,15 @@ def main():
+@@ -93,14 +244,15 @@ def main():
          args=args
      )
  
@@ -36,7 +197,7 @@ index 851d5be..227e97b 100644
          print(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}")
  
      print("[INFO] MIA evaluation completed.")
-@@ -115,15 +118,36 @@ def main():
+@@ -115,15 +267,27 @@ def main():
          args=args
      )
  
@@ -52,43 +213,35 @@ index 851d5be..227e97b 100644
 +    for k, v in efficacy_results.items():
          print(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}")
  
-+    if args.sample_export_path:
-+        export_path = Path(args.sample_export_path)
-+        export_path.parent.mkdir(parents=True, exist_ok=True)
-+        torch.save({
-+            'schema_version': 1,
-+            'privacy': {
-+                'positive_shadow_condition': 'unlearn_unlearned',
-+                'negative_shadow_condition': 'out_unlearned',
-+                'metrics': privacy_results,
-+                'samples': privacy_sample_records,
-+            },
-+            'efficacy': {
-+                'positive_shadow_condition': 'unlearn_unlearned',
-+                'negative_shadow_condition': 'out_original',
-+                'metrics': efficacy_results,
-+                'samples': efficacy_sample_records,
-+            },
-+        }, export_path)
-+        print(f"[INFO] Saved per-sample evaluation values to {export_path}")
++    if args.per_sample_output:
++        _export_per_sample_results(
++            args.per_sample_output,
++            target_dataset,
++            tokenizer,
++            privacy_sample_records,
++            efficacy_sample_records,
++            privacy_results,
++            efficacy_results,
++        )
 +
  
  
  
 diff --git a/text/utils.py b/text/utils.py
-index e0e914a..d3e99c7 100644
+index e0e914a..d761df6 100644
 --- a/text/utils.py
 +++ b/text/utils.py
-@@ -331,6 +331,8 @@ class MIAEvaluator:
+@@ -331,6 +331,9 @@ class MIAEvaluator:
  
          likelihood_ratios = []
          labels = []
-+        capture_samples = bool(getattr(self.args, 'sample_export_path', None))
++        # Instrumentation only: copy values after the official score is computed.
++        capture_samples = bool(getattr(self.args, 'per_sample_output', None))
 +        self.last_kde_records = []
  
          # Combine all samples into one list
          all_ids = unlearn_ids + out_ids
-@@ -350,6 +352,19 @@ class MIAEvaluator:
+@@ -350,6 +353,19 @@ class MIAEvaluator:
  
              likelihood_ratios.append(ratio)
              labels.append(label)
@@ -108,16 +261,17 @@ index e0e914a..d3e99c7 100644
  
  
          # Compute evaluation metrics
-@@ -488,6 +503,8 @@ class EfficacyEvaluator:
+@@ -488,6 +504,9 @@ class EfficacyEvaluator:
  
          likelihood_ratios = []
          labels = []
-+        capture_samples = bool(getattr(self.args, 'sample_export_path', None))
++        # Instrumentation only: copy values after the official score is computed.
++        capture_samples = bool(getattr(self.args, 'per_sample_output', None))
 +        self.last_kde_records = []
  
          # Combine all samples into one list
          all_ids = unlearn_ids + out_ids
-@@ -507,6 +524,19 @@ class EfficacyEvaluator:
+@@ -507,6 +526,19 @@ class EfficacyEvaluator:
  
              likelihood_ratios.append(ratio)
              labels.append(label)

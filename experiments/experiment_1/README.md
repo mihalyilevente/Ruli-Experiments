@@ -12,10 +12,12 @@ Apply the observability-only patch to a clean or compatible RULI checkout:
 git -C ../Ruli apply ../Ruli-experiments/patches/ruli_sample_capture.patch
 ```
 
-The patch adds one optional argument to `text/mia_inference.py` and copies values
-already present in the privacy and efficacy `evaluate_with_kde` loops. It does not
-change training, unlearning, dataset selection, inference losses, KDE construction,
-likelihood ratios, labels, thresholds, or returned metrics.
+The patch adds the optional `--per_sample_output` argument to
+`text/mia_inference.py` and copies values already present in the privacy and
+efficacy `evaluate_with_kde` loops. If the argument is omitted, the capture is not
+performed. The patch does not change training, NPO/unlearning, target-data or
+shadow-model selection, seeds, inference losses, KDE construction, likelihood
+ratios, evaluator logic, labels, thresholds, or returned metrics.
 
 Run the same official 9-shadow command that produced the reference metrics, adding
 only the export path:
@@ -29,40 +31,60 @@ python mia_inference.py \
   --sft_epochs 5 \
   --unlearn_epochs 15 \
   --prefix_epochs 1 \
-  --sample_export_path ../../Ruli-experiments/experiments/experiment_1/results/official_ruli_samples.pth
+  --per_sample_output ../../Ruli-experiments/experiments/experiment_1/results/official_ruli_samples.json
 ```
 
 All ordinary arguments must remain identical to the reference run. The new file
-stores each evaluated sample ID, observed loss, label, KDE likelihood ratio, and the
-positive/negative shadow observations passed to that exact KDE.
+stores one row per evaluated sample. Each row contains:
+
+- `sample_id`, `split`, and the evaluator's binary `label` (`unlearn=1`, `out=0`);
+- the target-dataset `token_ids` and text decoded from those IDs when the dataset
+  does not contain a text column;
+- `privacy_observed_target_loss`: the unlearned-model loss used by the privacy
+  attack for both UNLEARN and OUT rows;
+- `efficacy_observed_target_loss`: the unlearned-model loss for UNLEARN rows and
+  original-model loss for OUT rows used by the efficacy attack;
+- the exact `privacy_kde_likelihood_ratio_score` and
+  `efficacy_kde_likelihood_ratio_score` computed by the official evaluator loops;
+- the `unlearn_unlearned`, `out_unlearned`, and `out_original` shadow observations
+  supplied to those KDEs.
+
+Privacy compares `unlearn_unlearned` with `out_unlearned`; efficacy compares
+`unlearn_unlearned` with `out_original`. The JSON also contains the metric mappings
+returned by the official evaluators. After writing it, `mia_inference.py` reloads
+the rows, recomputes AUC and ACC using the captured label/score pairs and the
+official `score > 0.5` threshold, and fails on any mismatch.
 
 ## Convert the direct capture to CSV
 
-From the experiment repository, decode the corresponding text and verify metrics:
+From the experiment repository, flatten the captured rows and verify metrics:
 
 ```bash
 python experiments/experiment_1/export_ruli_scores.py \
-  --capture-path experiments/experiment_1/results/official_ruli_samples.pth \
-  --target-data-path ../Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed \
-  --tokenizer gpt2
+  --capture-path experiments/experiment_1/results/official_ruli_samples.json
 ```
 
-The default verification requires the exported rows to reproduce the official
-9-shadow AUCs at the reported precision: privacy `0.8531` and efficacy `0.8589`.
-It also reconstructs all official metrics from the captured labels and likelihood
-ratios and requires them to match the metrics returned during the same run. Use
-`--no-verify-expected-aucs` only for a deliberately non-reference smoke run.
+This conversion performs no model inference and no KDE computation; it only
+flattens the directly captured JSON arrays into CSV columns. It then reads the CSV
+back and requires its rows to reproduce the metrics returned by the same official
+run. For the reference 9-shadow run, the default check requires:
 
-The output `results/ruli_scores.csv` includes both UNLEARN and OUT groups. The score
-columns are the exact captured KDE likelihood ratios. Privacy uses
-`unlearn_unlearned` versus `out_unlearned`; efficacy uses `unlearn_unlearned` versus
-`out_original`. Each distribution is stored as a JSON array in the CSV, and
-`results/ruli_scores.metrics.json` records the verification and artifact hashes.
+- Privacy AUC `0.8531` and ACC `0.7700`;
+- Efficacy AUC `0.8589` and ACC `0.7925`.
+
+A mismatch raises an error asking for the run inputs/capture to be investigated;
+the script never changes scores, thresholds, or attack calculations to obtain the
+reference values. Use `--no-verify-reference-metrics` only for a deliberately
+non-reference smoke run.
+
+The output `results/ruli_scores.csv` includes both UNLEARN and OUT groups. Its
+`privacy_score`/`efficacy_score` and observed-loss columns are direct aliases of
+the explicit official-JSON fields above. Token IDs and each named shadow
+observation set are stored as JSON arrays within CSV cells.
 
 The official execution does not compute original-model losses for the UNLEARN
-samples. Consequently this direct export intentionally does not contain
-`original_loss` or `loss_change`; adding them would require extra inference and would
-violate the direct-capture requirement.
+samples. Consequently this direct export intentionally does not contain an extra
+`original_loss` or `loss_change`; adding either would require extra inference.
 
 ## Build semantic embeddings
 
