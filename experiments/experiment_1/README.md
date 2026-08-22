@@ -4,6 +4,71 @@ The score export is captured directly inside the official RULI evaluation. It do
 not reload checkpoints, repeat model inference, or recalculate a KDE likelihood
 ratio.
 
+## Export the exact retained corpus
+
+`export_retain_corpus.py` reconstructs the retained corpus used by the official
+`text/mia_inference.py` run without loading or training a model. It deliberately
+imports and calls the sibling RULI checkout's own
+`load_data("WikiText103", args)` function while `Ruli/text` is the working
+directory. This preserves its precise cache paths and data semantics:
+
+1. Load the saved target dataset.
+2. Load the cached tokenized WikiText-103 subsets, or select the first 50,000 raw
+   training rows and tokenize with the configured tokenizer, truncation, and a
+   maximum length of 128 before saving those caches.
+3. Filter rows whose `input_ids` are empty, exactly as upstream `load_data()` does.
+4. Load the existing shadow result on CPU and sort
+   `shadow_results["in_original"].keys()`.
+5. Use the first 200 sorted IDs for `in_data`.
+6. Construct
+   `attack_dataset = train_dataset.shuffle(seed=42).select(range(15000))`.
+7. Export `in_data + attack_dataset`, in that order.
+
+On RunPod, first prepare and activate the shared environment:
+
+```bash
+cd /workspace/Ruli-experiments
+bash scripts/setup_ruli_env.sh
+source /workspace/Ruli/.venv/bin/activate
+```
+
+Then export from this repository:
+
+```bash
+python experiments/experiment_1/export_retain_corpus.py \
+  --ruli-root ../Ruli \
+  --target-data-path ../Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed \
+  --shadow-path ../Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth
+```
+
+The target and shadow arguments shown above are also the defaults under
+`--ruli-root`. Change `--shadow-path` if the exact official run used another
+existing result filename. The exporter performs no training, inference, model
+construction, or CUDA operation; `torch` is used only to deserialize the shadow
+file with `map_location="cpu"`.
+
+The reference output is `results/retained_corpus.jsonl`, with exactly 15,200 rows:
+
+- 200 `target_in` samples;
+- 15,000 `wikitext_attack` samples.
+
+Each row contains a deterministic `row_id`, its position in the retained corpus,
+source, source index, selection index, text, token IDs, and attention mask when
+available. The WikiText `source_index` identifies the row in RULI's filtered
+tokenized training dataset; `source_selection_index` is its position after the
+seeded attack selection. Because upstream tokenization removes WikiText's raw
+`text` column, those rows' text is decoded directly from the exact retained token
+IDs with the same no-cleanup convention used by the official sample capture.
+
+`results/retained_corpus.metadata.json` records the seed, attack size, all selected
+IN target IDs, target/WikiText/shadow paths and fingerprints, upstream Git and file
+provenance, row/source counts, and a SHA-256 hash of the generated JSONL artifact.
+The command fails unless the reference defaults yield exactly 200 + 15,000 rows.
+
+This export is the only new Experiment 1 construction at this stage. Embedding the
+retained rows and comparing them with the 200 UNLEARN samples is a later step; this
+script does not perform graph or community analysis.
+
 ## Capture the official per-sample values
 
 Apply the observability-only patch to a clean or compatible RULI checkout:
