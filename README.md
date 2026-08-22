@@ -80,6 +80,7 @@ for the exact construction and all path options.
 ## Experiments
 
 - [Experiment 1](experiments/experiment_1/README.md): export the exact retained
-  corpus and per-sample RULI scores for later semantic comparison work.
+  corpus and per-sample RULI scores, build aligned UNLEARN/RETAIN embeddings, and
+  measure direct retained semantic support without graph analysis.
 
 Generated data, checkpoints, and results are excluded from version control.
