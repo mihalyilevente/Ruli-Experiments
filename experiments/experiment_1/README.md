@@ -151,44 +151,68 @@ The official execution does not compute original-model losses for the UNLEARN
 samples. Consequently this direct export intentionally does not contain an extra
 `original_loss` or `loss_change`; adding either would require extra inference.
 
-## Build semantic embeddings
+## Build aligned UNLEARN and retained embeddings
 
-After exporting `results/ruli_scores.csv`, encode every evaluated sample with:
-
-```bash
-python experiments/experiment_1/build_embeddings.py \
-  --device cuda:0
-```
-
-The default model is `sentence-transformers/all-mpnet-base-v2`. Embeddings are
-L2-normalized by default so their dot product is cosine similarity. Use `--model`
-to select another Sentence Transformers model, and use `--revision` to pin a model
-commit for a fully reproducible run.
-
-To embed only the forget samples used for the eventual correlation analysis:
+Generate the two embedding artifacts separately so the more expensive retained
+encoding can be reused:
 
 ```bash
 python experiments/experiment_1/build_embeddings.py \
-  --split unlearn \
+  --corpus unlearn \
+  --revision <model-commit> \
+  --device cuda:0
+
+python experiments/experiment_1/build_embeddings.py \
+  --corpus retain \
+  --revision <same-model-commit> \
   --device cuda:0
 ```
 
-The output `results/embeddings.npz` contains:
+Both commands default to `sentence-transformers/all-mpnet-base-v2` and L2
+normalization. Pinning `--revision` is recommended. The support script rejects the
+pair if their model name, requested/resolved revision, dimension, dtype, or
+normalization setting differs. This semantic-support pipeline does not permit
+unnormalized output.
 
-- `embeddings`: the float32 embedding matrix;
-- `sample_ids`: target-dataset IDs aligned with matrix rows;
-- `source_rows`: zero-based rows in `ruli_scores.csv`;
-- `splits`: `unlearn` or `out` for each vector;
-- `text_sha256`: hashes that detect accidental text/alignment changes.
+`results/unlearn_embeddings.npz` contains exactly 200 rows with `sample_ids`,
+input `source_rows`, and per-text SHA-256 hashes. `results/retain_embeddings.npz`
+contains exactly 15,200 rows with `row_ids`, `retained_indices`, `sources`,
+`source_indices`, input `source_rows`, and per-text SHA-256 hashes. Both store the
+aligned float32 matrix as `embeddings`.
 
-`results/embeddings.metadata.json` records the model, requested revision, device,
-normalization, input/output hashes, dimensions, and library versions.
+Each adjacent metadata JSON records the input artifact path/hash/size, output NPZ
+hash, model name and requested/resolved revision, package versions, device,
+dimension, dtype, normalization validation, batch size, and alignment rule. The
+loader sorts by explicit `sample_id` or `retained_index`; it never treats physical
+file order as an identity. Retained generation also requires the reference corpus
+SHA-256 `69a753cb427bcc4997bd0f4ceddba01d9bfa9b31a6736cc6b3bea1be16e305ee`
+by default.
 
-Important limitation: this embeds only samples present in `ruli_scores.csv`. The
-current export contains UNLEARN and OUT evaluation samples, not the full retained
-training corpus. A graph built from these vectors measures connectivity within the
-evaluation set; it does not yet measure semantic support supplied by all retained
-training examples.
+## Compute direct retained semantic support
+
+After both embeddings exist, compute the 3.04 million direct cosine similarities:
+
+```bash
+python experiments/experiment_1/compute_semantic_support.py
+```
+
+The output `results/unlearn_semantic_support.csv` contains the original UNLEARN
+rows and their privacy/efficacy scores and observed losses, plus maximum retained
+similarity, mean top-5/top-10/top-25 similarity, neighbor counts and similarity
+sums at 0.70/0.75/0.80, and explicit IDs, provenance, and similarity values for
+the top 10 retained neighbors. Their text hashes are included as an additional
+alignment check for manual inspection.
+
+Before multiplication, the script verifies both source hashes and NPZ hashes,
+exact row counts, unique explicit IDs, per-ID text hashes and retained provenance,
+finite normalized vectors, matching dimensions, and identical model settings.
+Joins use `sample_id` and `row_id`, not incidental row order. The adjacent metadata
+JSON records all inputs and hashes, settings, validation/alignment rules, and the
+output CSV hash.
+
+This stage is intentionally a direct semantic-support measurement. It does not
+calculate a graph, PageRank, Louvain communities, betweenness, or other graph
+metrics.
 
 ## Build the semantic-similarity graph
 
