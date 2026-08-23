@@ -203,6 +203,16 @@ sums at 0.70/0.75/0.80, and explicit IDs, provenance, and similarity values for
 the top 10 retained neighbors. Their text hashes are included as an additional
 alignment check for manual inspection.
 
+The same support metrics are also calculated independently against the 200
+`target_in` retained samples and the 15,000 `wikitext_attack` retained samples.
+Their columns use explicit source prefixes such as
+`target_in_max_similarity`, `target_in_neighbor_count_ge_0_75`, and
+`wikitext_attack_mean_top_10_similarity`. The output also includes character
+length, whitespace word count, captured GPT-2 token count when `token_ids` are
+available, a full-row WikiText heading indicator, an any-source exact-text
+duplicate indicator, and exact duplicate counts for each retained source.
+Heading syntax alone is never treated as a duplicate or factual match.
+
 Before multiplication, the script verifies both source hashes and NPZ hashes,
 exact row counts, unique explicit IDs, per-ID text hashes and retained provenance,
 finite normalized vectors, matching dimensions, and identical model settings.
@@ -212,6 +222,48 @@ output CSV hash.
 
 This stage is intentionally a direct semantic-support measurement. It does not
 calculate a graph, PageRank, Louvain communities, betweenness, or other graph
+metrics.
+
+## Analyze source-specific semantic support
+
+After creating the enriched semantic-support CSV, run the statistical stage:
+
+```bash
+python experiments/experiment_1/analyze_semantic_support.py
+```
+
+This script reads only `unlearn_semantic_support.csv`; it does not load a model,
+recompute RULI scores, or recompute embeddings. Its primary population is exactly
+the UNLEARN rows with `is_wikitext_heading == 0`. For the reference artifacts this
+requires 149 non-heading rows and records the 51 excluded heading rows.
+
+For each of the 20 source-specific support variables (10 per retained source) and
+each privacy/efficacy outcome, `correlations.csv` reports ordinary Spearman rho,
+raw p-value, and Benjamini-Hochberg q-value. It also reports partial Spearman
+results using the primary length covariate. GPT-2 token count is primary when it
+is complete for the analysis subset; otherwise whitespace word count is primary.
+`length_sensitivity.csv` reports the same partial analysis separately for all
+available token, word, and character length covariates, with BH correction within
+each covariate's test family.
+
+Partial Spearman is implemented by average-ranking support, outcome, and length;
+residualizing ranked support and ranked outcome separately against an intercept
+plus ranked length; and applying Pearson correlation to those residuals. It is a
+one-covariate analysis, not a large multivariable model.
+
+The output directory `results/semantic_support_analysis/` contains:
+
+- `correlations.csv`: ordinary and primary length-adjusted associations;
+- `length_sensitivity.csv`: one-length-covariate-at-a-time sensitivity results;
+- `feature_summaries.csv`: source-specific summaries for all 200 and the primary
+  149-row subset;
+- `predictor_correlations.csv`: pairwise Spearman diagnostics among support
+  predictors in the primary subset;
+- `analysis_summary.json`: exact subset/method definitions, sample counts, BH
+  families, artifact hashes, length-covariate choice, and a concise redundancy
+  summary.
+
+This stage intentionally does not fit a many-predictor model or add graph/community
 metrics.
 
 ## Build the semantic-similarity graph
