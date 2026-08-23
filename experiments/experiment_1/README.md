@@ -249,7 +249,8 @@ each covariate's test family.
 Partial Spearman is implemented by average-ranking support, outcome, and length;
 residualizing ranked support and ranked outcome separately against an intercept
 plus ranked length; and applying Pearson correlation to those residuals. It is a
-one-covariate analysis, not a large multivariable model.
+one-covariate analysis, not a large multivariable model. Its two-sided p-value
+uses the t approximation with `df = n - k - 2`, where `k = 1` length covariate.
 
 The output directory `results/semantic_support_analysis/` contains:
 

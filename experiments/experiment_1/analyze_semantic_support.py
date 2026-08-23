@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import numpy as np
-from scipy.stats import pearsonr, rankdata, spearmanr
+from scipy.stats import pearsonr, rankdata, spearmanr, t
 
 
 EXPECTED_UNLEARN_ROWS = 200
@@ -25,6 +25,7 @@ TOP_KS = (5, 10, 25)
 THRESHOLDS = (0.70, 0.75, 0.80)
 OUTCOMES = ("privacy_score", "efficacy_score")
 LENGTH_COVARIATES = ("gpt2_token_count", "word_count", "character_length")
+PARTIAL_COVARIATE_COUNT = 1
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 
@@ -233,8 +234,19 @@ def _partial_spearman(
     )[0]
     if np.ptp(support_residual) == 0 or np.ptp(outcome_residual) == 0:
         return None, None, "constant_residual"
-    result = pearsonr(support_residual, outcome_residual)
-    return float(result.statistic), float(result.pvalue), "ok"
+    correlation = float(pearsonr(support_residual, outcome_residual).statistic)
+    degrees_of_freedom = len(support) - PARTIAL_COVARIATE_COUNT - 2
+    if degrees_of_freedom <= 0:
+        return correlation, None, "insufficient_degrees_of_freedom"
+    denominator = 1.0 - correlation**2
+    if denominator <= 0.0:
+        p_value = 0.0
+    else:
+        t_statistic = correlation * np.sqrt(degrees_of_freedom / denominator)
+        p_value = float(
+            2.0 * t.sf(abs(t_statistic), df=degrees_of_freedom)
+        )
+    return correlation, p_value, "ok"
 
 
 def _benjamini_hochberg(
@@ -553,6 +565,12 @@ def main() -> None:
                 "against an intercept plus ranked length; apply Pearson "
                 "correlation to the two residual vectors."
             ),
+            "partial_spearman_p_value": {
+                "method": "two-sided t approximation",
+                "degrees_of_freedom": "n - k - 2",
+                "covariate_count_k": PARTIAL_COVARIATE_COUNT,
+                "covariates": "one length covariate",
+            },
         },
         "multiple_testing": {
             "method": "Benjamini-Hochberg FDR",
