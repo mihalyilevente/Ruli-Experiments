@@ -8,6 +8,7 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,10 +23,14 @@ REFERENCE_RETAIN_SHA256 = (
     "69a753cb427bcc4997bd0f4ceddba01d9bfa9b31a6736cc6b3bea1be16e305ee"
 )
 EXPECTED_RETAIN_SOURCES = {"target_in": 200, "wikitext_attack": 15_000}
+RETAIN_SOURCES = tuple(EXPECTED_RETAIN_SOURCES)
 TOP_KS = (5, 10, 25)
 THRESHOLDS = (0.70, 0.75, 0.80)
 TOP_NEIGHBORS = 10
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
+WIKITEXT_HEADING_PATTERN = re.compile(
+    r"\s*(?P<marks>=+)\s+.+?\s+(?P=marks)\s*"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -382,7 +387,9 @@ def _aligned_retain(
                 f"RETAIN provenance mismatch for explicit row_id {row_id}: "
                 f"expected {expected}, found {actual}."
             )
-        aligned_rows.append({"row_id": row_id, **expected})
+        aligned_rows.append(
+            {"row_id": row_id, "text": str(source_row["text"]), **expected}
+        )
     return embeddings, aligned_rows
 
 
@@ -404,6 +411,76 @@ def _same_model(unlearn: Mapping[str, Any], retain: Mapping[str, Any]) -> None:
         )
 
 
+def _source_metric_fields(source: str) -> list[str]:
+    fields = [
+        f"{source}_max_similarity",
+        *(f"{source}_mean_top_{top_k}_similarity" for top_k in TOP_KS),
+    ]
+    for threshold in THRESHOLDS:
+        suffix = f"{threshold:.2f}".replace(".", "_")
+        fields.extend(
+            (
+                f"{source}_neighbor_count_ge_{suffix}",
+                f"{source}_similarity_sum_ge_{suffix}",
+            )
+        )
+    return fields
+
+
+def _token_count(row: Mapping[str, str], sample_id: int) -> int | None:
+    raw = row.get("token_ids")
+    if raw is None or not raw.strip():
+        return None
+    try:
+        token_ids = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"UNLEARN sample {sample_id} has invalid token_ids JSON."
+        ) from exc
+    if not isinstance(token_ids, list) or any(
+        isinstance(token_id, bool) or not isinstance(token_id, int)
+        for token_id in token_ids
+    ):
+        raise ValueError(
+            f"UNLEARN sample {sample_id} token_ids must be a JSON integer array."
+        )
+    return len(token_ids)
+
+
+def _is_wikitext_heading(text: str) -> bool:
+    """Match an entire WikiText heading row, including multiple '=' levels."""
+
+    return WIKITEXT_HEADING_PATTERN.fullmatch(text) is not None
+
+
+def _add_support_metrics(
+    row: dict[str, Any],
+    values: np.ndarray,
+    retained_indices: np.ndarray,
+    prefix: str,
+) -> None:
+    if values.size < max(TOP_KS):
+        raise ValueError(
+            f"Retained source {prefix!r} has {values.size} rows; "
+            f"at least {max(TOP_KS)} are required."
+        )
+    top_indices = np.lexsort((retained_indices, -values))[: max(TOP_KS)]
+    row[f"{prefix}_max_similarity"] = float(values[top_indices[0]])
+    for top_k in TOP_KS:
+        row[f"{prefix}_mean_top_{top_k}_similarity"] = float(
+            np.mean(values[top_indices[:top_k]], dtype=np.float64)
+        )
+    for threshold in THRESHOLDS:
+        suffix = f"{threshold:.2f}".replace(".", "_")
+        mask = values >= threshold
+        row[f"{prefix}_neighbor_count_ge_{suffix}"] = int(
+            np.count_nonzero(mask)
+        )
+        row[f"{prefix}_similarity_sum_ge_{suffix}"] = float(
+            np.sum(values[mask], dtype=np.float64)
+        )
+
+
 def _support_rows(
     similarity: np.ndarray,
     sample_ids: Sequence[int],
@@ -414,12 +491,46 @@ def _support_rows(
     retain_indices = np.asarray(
         [int(row["retained_index"]) for row in retain_rows], dtype=np.int64
     )
+    source_embedding_rows = {
+        source: np.asarray(
+            [
+                index
+                for index, row in enumerate(retain_rows)
+                if row["source"] == source
+            ],
+            dtype=np.int64,
+        )
+        for source in RETAIN_SOURCES
+    }
+    for source, indices in source_embedding_rows.items():
+        if len(indices) != EXPECTED_RETAIN_SOURCES[source]:
+            raise ValueError(
+                f"Aligned retained source {source!r} has {len(indices)} rows."
+            )
+    duplicate_counts = {
+        source: Counter(
+            str(retain_rows[index]["text"])
+            for index in source_embedding_rows[source]
+        )
+        for source in RETAIN_SOURCES
+    }
     for unlearn_index, sample_id in enumerate(sample_ids):
         values = similarity[unlearn_index]
         # Explicit retained_index breaks exact-similarity ties deterministically.
         top_25 = np.lexsort((retain_indices, -values))[: max(TOP_KS)]
         row = dict(score_rows[sample_id])
-        row["unlearn_text_sha256"] = _text_hash(row["text"])
+        text = row["text"]
+        row["unlearn_text_sha256"] = _text_hash(text)
+        row["character_length"] = len(text)
+        row["word_count"] = len(text.split())
+        token_count = _token_count(row, sample_id)
+        row["gpt2_token_count"] = "" if token_count is None else token_count
+        row["is_wikitext_heading"] = int(_is_wikitext_heading(text))
+        for source in RETAIN_SOURCES:
+            row[f"{source}_exact_duplicate_count"] = duplicate_counts[source][text]
+        row["exact_retained_text_duplicate"] = int(
+            any(duplicate_counts[source][text] > 0 for source in RETAIN_SOURCES)
+        )
         row["maximum_retained_similarity"] = float(values[top_25[0]])
         for top_k in TOP_KS:
             row[f"mean_top_{top_k}_similarity"] = float(
@@ -431,6 +542,14 @@ def _support_rows(
             row[f"retained_neighbor_count_ge_{suffix}"] = int(np.count_nonzero(mask))
             row[f"retained_similarity_sum_ge_{suffix}"] = float(
                 np.sum(values[mask], dtype=np.float64)
+            )
+        for source in RETAIN_SOURCES:
+            indices = source_embedding_rows[source]
+            _add_support_metrics(
+                row,
+                values[indices],
+                retain_indices[indices],
+                source,
             )
         for rank, retained_embedding_row in enumerate(
             top_25[:TOP_NEIGHBORS], start=1
@@ -450,6 +569,13 @@ def _support_rows(
 def _new_fields() -> list[str]:
     fields = [
         "unlearn_text_sha256",
+        "character_length",
+        "word_count",
+        "gpt2_token_count",
+        "is_wikitext_heading",
+        "exact_retained_text_duplicate",
+        "target_in_exact_duplicate_count",
+        "wikitext_attack_exact_duplicate_count",
         "maximum_retained_similarity",
         *(f"mean_top_{top_k}_similarity" for top_k in TOP_KS),
     ]
@@ -461,6 +587,8 @@ def _new_fields() -> list[str]:
                 f"retained_similarity_sum_ge_{suffix}",
             )
         )
+    for source in RETAIN_SOURCES:
+        fields.extend(_source_metric_fields(source))
     for rank in range(1, TOP_NEIGHBORS + 1):
         prefix = f"top_{rank}_retained"
         fields.extend(
@@ -606,8 +734,11 @@ def main() -> None:
             "sha256": _sha256_file(path),
             "bytes": path.stat().st_size,
         }
+    gpt2_token_count_available = all(
+        row["gpt2_token_count"] != "" for row in rows
+    )
     metadata = {
-        "schema_version": 1,
+        "schema_version": 2,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "method": (
             "normalized cosine similarity via "
@@ -627,6 +758,34 @@ def main() -> None:
         ),
         "top_k_means": list(TOP_KS),
         "thresholds": list(THRESHOLDS),
+        "source_specific_support": {
+            source: {
+                "retained_row_count": EXPECTED_RETAIN_SOURCES[source],
+                "columns": _source_metric_fields(source),
+            }
+            for source in RETAIN_SOURCES
+        },
+        "structural_features": {
+            "character_length": "Python len(text) Unicode code-point count",
+            "word_count": "len(text.split()) whitespace-token count",
+            "gpt2_token_count": (
+                "length of the captured token_ids JSON array; blank when absent"
+            ),
+            "gpt2_token_count_available_for_all_unlearn_rows": (
+                gpt2_token_count_available
+            ),
+            "is_wikitext_heading": (
+                "full-row WikiText heading syntax with equal matching '=' levels "
+                "and whitespace around nonempty heading text"
+            ),
+            "exact_retained_text_duplicate": (
+                "1 only when the full text string exactly equals at least one "
+                "retained text; headings are not otherwise treated as duplicates"
+            ),
+            "source_exact_duplicate_counts": [
+                f"{source}_exact_duplicate_count" for source in RETAIN_SOURCES
+            ],
+        },
         "top_neighbors_preserved": TOP_NEIGHBORS,
         "tie_breaker": "ascending explicit retained_index",
         "alignment": (

@@ -81,6 +81,6 @@ for the exact construction and all path options.
 
 - [Experiment 1](experiments/experiment_1/README.md): export the exact retained
   corpus and per-sample RULI scores, build aligned UNLEARN/RETAIN embeddings, and
-  measure direct retained semantic support without graph analysis.
+  measure and statistically analyze source-specific retained semantic support.
 
 Generated data, checkpoints, and results are excluded from version control.
