@@ -44,7 +44,9 @@ seeds, or implement Experiment 2B.
 
 `evaluate_experiment_2a.py` validates the frozen manifest, exact 9-shadow
 artifact, official target dataset, all four seed-42 checkpoint directories, and
-the upstream RULI text-loss behavior. It evaluates HIGH, LOW, and PLACEBO and
+the upstream RULI text-loss behavior. Under RULI's thirds assignment, nine total
+shadow models yield three observations per sample in each IN, OUT, and UNLEARN
+condition distribution. The evaluator evaluates HIGH, LOW, and PLACEBO and
 writes identifier-aligned per-sample privacy scores for all 200 UNLEARN and 200
 OUT samples. The primary output is the preregistered paired contrast
 `privacy_log_odds_LOW - privacy_log_odds_PLACEBO` for the 28 supported samples.

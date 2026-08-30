@@ -83,6 +83,18 @@ class Experiment2AEvaluationTests(unittest.TestCase):
                 201,
             )
 
+    def test_nine_shadow_artifact_has_three_observations_per_condition(self):
+        observations = EVALUATOR._plain_shadow_observations(
+            [1.0, 2.0, 3.0], "in_original", 200
+        )
+        self.assertEqual(observations, [1.0, 2.0, 3.0])
+        with self.assertRaisesRegex(
+            ValueError, "not the fixed 3 produced by 9 shadow models"
+        ):
+            EVALUATOR._plain_shadow_observations(
+                [float(value) for value in range(9)], "in_original", 200
+            )
+
     def test_primary_contrast_preserves_manifest_order(self):
         supported = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["sets"][
             "S_sample_ids"

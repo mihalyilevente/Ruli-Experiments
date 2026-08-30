@@ -42,7 +42,8 @@ EVALUATION_SPLITS = ("unlearn", "out")
 EXPECTED_SPLIT_COUNT = 200
 EXPECTED_S_COUNT = 28
 EXPECTED_NEGATIVE_CONTROL_COUNT = 121
-EXPECTED_SHADOW_COUNT = 9
+EXPECTED_TOTAL_SHADOW_MODELS = 9
+EXPECTED_PER_CONDITION_SHADOW_COUNT = EXPECTED_TOTAL_SHADOW_MODELS // 3
 FROZEN_MANIFEST_CONTENT_SHA256 = (
     "750c4cf9bc470091a05ff9e10fcf8f8cf6914f51a8a733b2e1528470ea02bf3b"
 )
@@ -242,10 +243,12 @@ def _plain_shadow_observations(
     if not isinstance(values, Sequence) or isinstance(values, (str, bytes)):
         raise ValueError(f"{field}[{sample_id}] is not a numeric sequence.")
     observations = [float(value) for value in values]
-    if len(observations) != EXPECTED_SHADOW_COUNT:
+    if len(observations) != EXPECTED_PER_CONDITION_SHADOW_COUNT:
         raise ValueError(
             f"{field}[{sample_id}] contains {len(observations)} observations, "
-            f"not the fixed {EXPECTED_SHADOW_COUNT}."
+            f"not the fixed {EXPECTED_PER_CONDITION_SHADOW_COUNT} produced by "
+            f"{EXPECTED_TOTAL_SHADOW_MODELS} shadow models with the upstream "
+            "IN/OUT/UNLEARN thirds assignment."
         )
     if not all(math.isfinite(value) for value in observations):
         raise ValueError(f"{field}[{sample_id}] contains NaN or Inf observations.")
@@ -314,7 +317,14 @@ def _load_and_validate_shadow(
     metadata = dict(metadata)
     metadata.update(
         {
-            "shadow_count": EXPECTED_SHADOW_COUNT,
+            "total_shadow_models": EXPECTED_TOTAL_SHADOW_MODELS,
+            "per_sample_per_condition_observation_count": (
+                EXPECTED_PER_CONDITION_SHADOW_COUNT
+            ),
+            "shadow_assignment_rule": (
+                "For N=9 shadow models, each target is assigned to N//3=3 IN, "
+                "3 OUT, and 3 UNLEARN models"
+            ),
             "ordered_target_id_count": len(actual_ids),
             "partition_rule": (
                 "sorted(shadow_results['in_original'].keys()); first 200 IN, "
