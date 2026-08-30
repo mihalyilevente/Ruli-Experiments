@@ -4,12 +4,20 @@ The frozen protocol and intervention manifest define Experiment 2 before any
 training begins. Do not regenerate or edit
 `results/intervention_manifest.json` while running Experiment 2A.
 
-## Experiment 2A: seed-42 training
+## Experiment 2A: training
 
 `run_experiment_2a.py` imports the current training helpers from the sibling RULI
 checkout. It reproduces the official initial GPT-2 SFT, prefix training, and NPO
 stages once. It then saves one shared post-NPO checkpoint and independently loads
 that checkpoint for the HIGH, LOW, and PLACEBO two-epoch final retain-SFT stages.
+The preregistered model seeds are 42, 43, 44, 45, and 46. The model seed is
+explicitly passed to Python, NumPy, PyTorch, CUDA, and both `seed` and `data_seed`
+in every upstream Hugging Face `TrainingArguments` instance.
+
+The WikiText background remains frozen independently: it is always reconstructed
+with selection seed 42 and checked row-by-row against the immutable manifest.
+Changing the model seed does not change the target dataset, intervention sets,
+background membership, target evaluation partition, or shadow artifact.
 
 The runner verifies the manifest's internal hash and protocol checks, the exact
 shadow and target artifacts, the official evaluation partition, all condition
@@ -26,24 +34,25 @@ RULI_ROOT=/workspace/Ruli
 SHADOW_PATH=$RULI_ROOT/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth
 TARGET_PATH=$RULI_ROOT/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700
 python experiments/experiment_2/run_experiment_2a.py \
-  --seed 42 \
+  --seed 43 \
   --ruli-root "$RULI_ROOT" \
   --shadow-path "$SHADOW_PATH" \
   --target-data-path "$TARGET_PATH" \
   --device cuda:0
 ```
 
-Outputs are written under `results/experiment_2a/seed_42/` and ignored by Git.
+Outputs are written under `results/experiment_2a/seed_<SEED>/` and ignored by Git.
 The runner refuses to overwrite an existing checkpoint or metadata file.
 
 This phase generates training checkpoints only. It does not run KDE/RULI
-evaluation, calculate privacy or efficacy, train shadow models, loop over five
-seeds, or implement Experiment 2B.
+evaluation, calculate privacy or efficacy, train shadow models, or implement
+Experiment 2B.
 
-## Experiment 2A: seed-42 evaluation
+## Experiment 2A: evaluation
 
 `evaluate_experiment_2a.py` validates the frozen manifest, exact 9-shadow
-artifact, official target dataset, all four seed-42 checkpoint directories, and
+artifact, official target dataset, all four seed-specific checkpoint directories,
+the training-run seed and frozen hyperparameters, and
 the upstream RULI text-loss behavior. Under RULI's thirds assignment, nine total
 shadow models yield three observations per sample in each IN, OUT, and UNLEARN
 condition distribution. The evaluator evaluates HIGH, LOW, and PLACEBO and
@@ -56,25 +65,25 @@ Validate the complete input layout without loading model weights:
 ```bash
 cd /workspace/Ruli-Experiments
 python experiments/experiment_2/evaluate_experiment_2a.py \
-  --seed 42 \
+  --seed 43 \
   --ruli-root /workspace/Ruli \
   --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
   --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
-  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_42 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_43 \
   --device cuda:0 \
   --validate-only
 ```
 
-Run the seed-42 evaluation explicitly (it is never launched automatically):
+Run one seed's evaluation explicitly:
 
 ```bash
 cd /workspace/Ruli-Experiments
 python experiments/experiment_2/evaluate_experiment_2a.py \
-  --seed 42 \
+  --seed 43 \
   --ruli-root /workspace/Ruli \
   --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
   --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
-  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_42 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_43 \
   --device cuda:0
 ```
 
@@ -95,3 +104,31 @@ Outputs are written under the seed directory's `evaluation/` subdirectory:
 
 The evaluator refuses to overwrite these outputs and does not train models,
 retrain shadows, change thresholds, select post-hoc cohorts, or run other seeds.
+
+## Sequential seeds 43--46
+
+`run_remaining_seeds.py` runs training followed by evaluation for each remaining
+seed in order and stops on the first failure. It writes one append-only log per
+seed under `results/experiment_2a/logs/`. A seed with all training and evaluation
+markers is skipped; partial training or evaluation output is rejected so nothing
+is silently rerun or overwritten. Seed 42 is not in the orchestration list.
+
+Run it in the foreground:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_remaining_seeds.py \
+  --ruli-root /workspace/Ruli \
+  --device cuda:0
+```
+
+Or launch the same command in a `nohup`-friendly way:
+
+```bash
+cd /workspace/Ruli-Experiments
+nohup python experiments/experiment_2/run_remaining_seeds.py \
+  --ruli-root /workspace/Ruli \
+  --device cuda:0 \
+  > experiments/experiment_2/results/experiment_2a/remaining_seeds.nohup.log \
+  2>&1 &
+```

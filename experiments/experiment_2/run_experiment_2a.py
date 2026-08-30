@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the frozen, single-seed Experiment 2A training intervention.
+"""Run one preregistered seed of the frozen Experiment 2A intervention.
 
 This runner deliberately imports the current upstream RULI training helpers instead
 of copying their SFT, prefix-training, or NPO implementations.  The intervention
@@ -29,10 +29,14 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPOSITORY_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_RULI_ROOT = REPOSITORY_ROOT.parent / "Ruli"
 DEFAULT_MANIFEST = SCRIPT_DIR / "results" / "intervention_manifest.json"
-DEFAULT_OUTPUT_ROOT = SCRIPT_DIR / "results" / "experiment_2a" / "seed_42"
 
 MODEL_NAME = "gpt2"
-SEED = 42
+DEFAULT_TRAINING_SEED = 42
+PREREGISTERED_TRAINING_SEEDS = (42, 43, 44, 45, 46)
+FROZEN_ARTIFACT_SEED = 42
+FROZEN_MANIFEST_CONTENT_SHA256 = (
+    "750c4cf9bc470091a05ff9e10fcf8f8cf6914f51a8a733b2e1528470ea02bf3b"
+)
 SFT_EPOCHS = 5
 PREFIX_EPOCHS = 1
 NPO_EPOCHS = 15
@@ -47,7 +51,7 @@ SOURCE_INDEX_COLUMN = "__experiment_2a_source_index__"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Train the frozen seed-42 Experiment 2A HIGH, LOW, and PLACEBO "
+            "Train one preregistered Experiment 2A HIGH, LOW, and PLACEBO "
             "branches from one shared post-NPO checkpoint."
         )
     )
@@ -55,9 +59,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--shadow-path", type=Path)
     parser.add_argument("--target-data-path", type=Path)
-    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        help="Defaults to results/experiment_2a/seed_<SEED>.",
+    )
     parser.add_argument("--device", default="cuda:0")
-    parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--seed", type=int, default=DEFAULT_TRAINING_SEED)
     validation_mode = parser.add_mutually_exclusive_group()
     validation_mode.add_argument(
         "--validate-manifest-only",
@@ -70,6 +78,30 @@ def parse_args() -> argparse.Namespace:
         help="Validate the manifest and exact input datasets, but do not train.",
     )
     return parser.parse_args()
+
+
+def _validate_training_seed(seed: int) -> None:
+    if seed not in PREREGISTERED_TRAINING_SEEDS:
+        allowed = ", ".join(str(value) for value in PREREGISTERED_TRAINING_SEEDS)
+        raise ValueError(
+            f"Experiment 2A seed must be preregistered; expected one of {allowed}, "
+            f"found {seed}."
+        )
+
+
+def _seed_output_root(seed: int) -> Path:
+    return SCRIPT_DIR / "results" / "experiment_2a" / f"seed_{seed}"
+
+
+def _validate_seed_output_path(path: Path, seed: int, argument: str) -> Path:
+    resolved = path.resolve()
+    expected_name = f"seed_{seed}"
+    if resolved.name != expected_name:
+        raise ValueError(
+            f"{argument} must name the requested seed directory {expected_name!r}; "
+            f"found {resolved}."
+        )
+    return resolved
 
 
 def _sha256_file(path: Path) -> str:
@@ -272,6 +304,12 @@ def _load_and_validate_manifest(path: Path) -> tuple[dict[str, Any], dict[str, A
                     f"{name} does not reference the shared WikiText corpus."
                 )
 
+    if declared_hash != FROZEN_MANIFEST_CONTENT_SHA256:
+        raise ValueError(
+            "Frozen intervention manifest SHA-256 mismatch: expected "
+            f"{FROZEN_MANIFEST_CONTENT_SHA256}, found {declared_hash}."
+        )
+
     summary = {
         "path": str(path),
         "file_sha256": _sha256_file(path),
@@ -372,7 +410,7 @@ def _validate_background_dataset(
         raise ValueError(f"Unexpected WikiText column: {SOURCE_INDEX_COLUMN}")
     indexed_attack = (
         train_dataset.add_column(SOURCE_INDEX_COLUMN, list(range(len(train_dataset))))
-        .shuffle(seed=SEED)
+        .shuffle(seed=FROZEN_ARTIFACT_SEED)
         .select(range(ATTACK_SIZE))
     )
     expected_rows = _mapping(
@@ -420,7 +458,7 @@ def _validate_background_dataset(
     return {
         "source": "wikitext_attack",
         "selection": "train_dataset.shuffle(seed=42).select(range(15000))",
-        "selection_seed": SEED,
+        "selection_seed": FROZEN_ARTIFACT_SEED,
         "count": ATTACK_SIZE,
         "membership_sha256": membership_hash,
         "ordered_source_indices_sha256": _canonical_sha256(
@@ -463,6 +501,35 @@ def _reset_rng(seed: int, torch: Any, numpy: Any) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+
+
+def _configure_training_arguments_seed(ruli_utils: Any, seed: int) -> None:
+    """Make every upstream TrainingArguments instance use the model seed.
+
+    RULI's helpers construct TrainingArguments internally and do not expose its
+    seed fields. Replacing only that imported constructor preserves the upstream
+    training implementations and hyperparameters while making both Trainer RNG
+    and dataset sampling explicit. For seed 42 these are the effective defaults
+    used by the completed reference run.
+    """
+
+    original_training_arguments = ruli_utils.TrainingArguments
+
+    def seeded_training_arguments(*args: Any, **kwargs: Any) -> Any:
+        for field in ("seed", "data_seed"):
+            supplied = kwargs.get(field, seed)
+            if supplied != seed:
+                raise ValueError(
+                    f"Upstream TrainingArguments requested {field}={supplied}, "
+                    f"but this run requires {seed}."
+                )
+            kwargs[field] = seed
+        training_args = original_training_arguments(*args, **kwargs)
+        if training_args.seed != seed or training_args.data_seed != seed:
+            raise RuntimeError("TrainingArguments did not retain the requested seed.")
+        return training_args
+
+    ruli_utils.TrainingArguments = seeded_training_arguments
 
 
 def _parameter_sha256(model: Any, torch: Any) -> str:
@@ -578,8 +645,7 @@ def _cleanup_cuda(torch: Any) -> None:
 
 def main() -> None:
     args = parse_args()
-    if args.seed != SEED:
-        raise ValueError("Experiment 2A currently supports only the frozen seed 42.")
+    _validate_training_seed(args.seed)
 
     manifest, manifest_metadata = _load_and_validate_manifest(args.manifest)
     print(
@@ -666,7 +732,10 @@ def main() -> None:
         raise ValueError(
             "Filtered WikiText train data contains fewer than 15,000 rows."
         )
-    attack_dataset = train_dataset.shuffle(seed=SEED).select(range(ATTACK_SIZE))
+    # Background membership is a frozen artifact identity, not a model seed.
+    attack_dataset = train_dataset.shuffle(seed=FROZEN_ARTIFACT_SEED).select(
+        range(ATTACK_SIZE)
+    )
 
     shadow_results = torch.load(
         shadow_path, map_location="cpu", weights_only=False
@@ -729,7 +798,13 @@ def main() -> None:
         print("[VERIFY] Full pre-training validation passed; no model was trained.")
         return
 
-    output_root = args.output_root.resolve()
+    output_root = _validate_seed_output_path(
+        args.output_root
+        if args.output_root is not None
+        else _seed_output_root(args.seed),
+        args.seed,
+        "--output-root",
+    )
     checkpoints = {
         "shared_post_npo_pre_final_ft": output_root / "post_npo_pre_final_ft",
         "HIGH": output_root / "HIGH_final",
@@ -754,7 +829,8 @@ def main() -> None:
     high_retain_data = condition_datasets["HIGH"]
 
     print("[INFO] Training common GPT-2 model: SFT=5 epochs, prefix=1 epoch.")
-    _reset_rng(SEED, torch, np)
+    _configure_training_arguments_seed(ruli_utils, args.seed)
+    _reset_rng(args.seed, torch, np)
     model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(args.device)
     model_config = model.config.to_dict()
     initial_pretrained_parameter_hash = _parameter_sha256(model, torch)
@@ -795,7 +871,7 @@ def main() -> None:
     final_hashes: dict[str, str] = {}
     for condition_name in CONDITION_NAMES:
         print(f"[INFO] Training independent {condition_name} final-FT branch.")
-        _reset_rng(SEED, torch, np)
+        _reset_rng(args.seed, torch, np)
         condition_model = AutoModelForCausalLM.from_pretrained(
             checkpoints["shared_post_npo_pre_final_ft"]
         ).to(args.device)
@@ -805,7 +881,7 @@ def main() -> None:
             raise RuntimeError(
                 f"{condition_name} did not load byte-identical post-NPO parameters."
             )
-        _reset_rng(SEED, torch, np)
+        _reset_rng(args.seed, torch, np)
         with _working_directory(scratch_root / condition_name):
             condition_model = ruli_utils.train_sft(
                 condition_model,
@@ -826,7 +902,7 @@ def main() -> None:
     metadata = {
         "schema_version": 1,
         "experiment": "2A",
-        "seed": SEED,
+        "seed": args.seed,
         "manifest": manifest_metadata,
         "git": {
             "ruli": _git_metadata(ruli_root),
@@ -924,10 +1000,14 @@ def main() -> None:
             ),
         },
         "rng_policy": {
-            "python_random": SEED,
-            "numpy": SEED,
-            "torch_cpu": SEED,
-            "torch_cuda_all": SEED,
+            "training_seed": args.seed,
+            "python_random": args.seed,
+            "numpy": args.seed,
+            "torch_cpu": args.seed,
+            "torch_cuda_all": args.seed,
+            "transformers_training_arguments_seed": args.seed,
+            "transformers_training_arguments_data_seed": args.seed,
+            "frozen_wikitext_selection_seed": FROZEN_ARTIFACT_SEED,
             "reset_before_each_checkpoint_load": True,
             "reset_immediately_before_each_final_sft": True,
         },

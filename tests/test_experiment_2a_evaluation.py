@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import math
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -143,6 +144,58 @@ class Experiment2AEvaluationTests(unittest.TestCase):
             payload["manifest_hash"]["sha256"],
             EVALUATOR.FROZEN_MANIFEST_CONTENT_SHA256,
         )
+
+    def test_training_metadata_binds_seed_and_frozen_design(self):
+        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        shared_hash = "a" * 64
+        payload = {
+            "experiment": "2A",
+            "seed": 43,
+            "manifest": {
+                "declared_canonical_content_sha256": manifest["manifest_hash"][
+                    "sha256"
+                ]
+            },
+            "model_and_hyperparameters": {
+                "model": "gpt2",
+                "initial_sft_epochs": 5,
+                "prefix_epochs": 1,
+                "unlearn_method": "npo",
+                "npo_epochs": 15,
+                "final_retain_sft_epochs": 2,
+                "attack_size": 15_000,
+            },
+            "background_dataset": {
+                "selection_seed": 42,
+                "count": 15_000,
+                "membership_sha256": manifest["shared_wikitext_background"][
+                    "membership_sha256"
+                ],
+            },
+            "starting_parameter_identity": {
+                "passed": True,
+                "sha256": shared_hash,
+            },
+            "checkpoints": {
+                condition: {"starting_parameter_sha256": shared_hash}
+                for condition in EVALUATOR.CONDITIONS
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "run_metadata.json").write_text(
+                json.dumps(payload), encoding="utf-8"
+            )
+            metadata = EVALUATOR._validate_training_run_metadata(
+                root, 43, manifest
+            )
+            self.assertEqual(metadata["seed"], 43)
+            payload["seed"] = 44
+            (root / "run_metadata.json").write_text(
+                json.dumps(payload), encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                EVALUATOR._validate_training_run_metadata(root, 43, manifest)
 
 
 if __name__ == "__main__":

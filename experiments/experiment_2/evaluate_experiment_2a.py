@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate the frozen seed-42 Experiment 2A checkpoints with fixed-shadow RULI.
+"""Evaluate one frozen Experiment 2A seed with fixed-shadow RULI.
 
 The evaluator imports the upstream RULI evaluator at runtime and directly reuses
 its last-seven-token loss path.  It adds identifier-aligned, per-sample KDE
@@ -31,11 +31,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPOSITORY_ROOT = SCRIPT_DIR.parents[1]
 DEFAULT_RULI_ROOT = REPOSITORY_ROOT.parent / "Ruli"
 DEFAULT_MANIFEST = SCRIPT_DIR / "results" / "intervention_manifest.json"
-DEFAULT_EXPERIMENT_OUTPUT = (
-    SCRIPT_DIR / "results" / "experiment_2a" / "seed_42"
-)
 
-SEED = 42
+DEFAULT_TRAINING_SEED = 42
 MODEL_NAME = "gpt2"
 CONDITIONS = ("HIGH", "LOW", "PLACEBO")
 EVALUATION_SPLITS = ("unlearn", "out")
@@ -71,11 +68,11 @@ TRAINING_RUNNER = _load_training_runner()
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate the frozen Experiment 2A seed-42 HIGH, LOW, and PLACEBO "
+            "Evaluate one preregistered Experiment 2A HIGH, LOW, and PLACEBO "
             "checkpoints with exact per-sample fixed-shadow RULI scoring."
         )
     )
-    parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--seed", type=int, default=DEFAULT_TRAINING_SEED)
     parser.add_argument("--ruli-root", type=Path, default=DEFAULT_RULI_ROOT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--shadow-path", type=Path)
@@ -83,10 +80,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--experiment-output",
         type=Path,
-        default=DEFAULT_EXPERIMENT_OUTPUT,
         help=(
             "Seed output directory containing post_npo_pre_final_ft and the "
-            "three final checkpoints. Results are written below evaluation/."
+            "three final checkpoints. Defaults to results/experiment_2a/"
+            "seed_<SEED>; results are written below evaluation/."
         ),
     )
     parser.add_argument("--device", default="cuda:0")
@@ -209,6 +206,98 @@ def _checkpoint_metadata(path: Path, name: str) -> dict[str, Any]:
             {"name": file.name, "bytes": file.stat().st_size}
             for file in weight_files
         ],
+    }
+
+
+def _validate_training_run_metadata(
+    experiment_output: Path,
+    seed: int,
+    manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    path = experiment_output.resolve() / "run_metadata.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"Training run metadata does not exist: {path}")
+    try:
+        metadata = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Training run metadata is invalid JSON: {path}") from exc
+    if not isinstance(metadata, Mapping):
+        raise ValueError("Training run metadata root must be a JSON object.")
+    if metadata.get("experiment") != "2A" or metadata.get("seed") != seed:
+        raise ValueError(
+            "Training run metadata does not match Experiment 2A seed "
+            f"{seed}: experiment={metadata.get('experiment')!r}, "
+            f"seed={metadata.get('seed')!r}."
+        )
+
+    run_manifest = metadata.get("manifest")
+    if not isinstance(run_manifest, Mapping) or run_manifest.get(
+        "declared_canonical_content_sha256"
+    ) != manifest["manifest_hash"]["sha256"]:
+        raise ValueError("Training run used a different intervention manifest.")
+
+    hyperparameters = metadata.get("model_and_hyperparameters")
+    expected_hyperparameters = {
+        "model": "gpt2",
+        "initial_sft_epochs": 5,
+        "prefix_epochs": 1,
+        "unlearn_method": "npo",
+        "npo_epochs": 15,
+        "final_retain_sft_epochs": 2,
+        "attack_size": 15_000,
+    }
+    if not isinstance(hyperparameters, Mapping):
+        raise ValueError("Training run has no model_and_hyperparameters metadata.")
+    mismatches = {
+        key: hyperparameters.get(key)
+        for key, expected in expected_hyperparameters.items()
+        if hyperparameters.get(key) != expected
+    }
+    if mismatches:
+        raise ValueError(
+            "Training run changed frozen model or hyperparameters: "
+            + ", ".join(f"{key}={value!r}" for key, value in mismatches.items())
+        )
+
+    background = metadata.get("background_dataset")
+    frozen_background = manifest["shared_wikitext_background"]
+    if (
+        not isinstance(background, Mapping)
+        or background.get("selection_seed")
+        != TRAINING_RUNNER.FROZEN_ARTIFACT_SEED
+        or background.get("count") != 15_000
+        or background.get("membership_sha256")
+        != frozen_background["membership_sha256"]
+    ):
+        raise ValueError("Training run did not use the frozen WikiText background.")
+
+    identity = metadata.get("starting_parameter_identity")
+    checkpoint_records = metadata.get("checkpoints")
+    if not isinstance(identity, Mapping) or identity.get("passed") is not True:
+        raise ValueError("Training run did not pass starting-parameter identity.")
+    if not isinstance(checkpoint_records, Mapping):
+        raise ValueError("Training run has no checkpoint hash metadata.")
+    shared_hash = identity.get("sha256")
+    starting_hashes = []
+    for condition in CONDITIONS:
+        record = checkpoint_records.get(condition)
+        if not isinstance(record, Mapping):
+            raise ValueError(f"Training metadata has no {condition} checkpoint.")
+        starting_hashes.append(record.get("starting_parameter_sha256"))
+    if not shared_hash or any(value != shared_hash for value in starting_hashes):
+        raise ValueError(
+            "HIGH, LOW, and PLACEBO did not record byte-identical post-NPO "
+            "starting parameters."
+        )
+
+    return {
+        "path": str(path),
+        "sha256": TRAINING_RUNNER._sha256_file(path),
+        "seed": seed,
+        "frozen_hyperparameters": "passed",
+        "frozen_background": "passed",
+        "starting_parameter_identity": "passed",
+        "starting_parameter_sha256": shared_hash,
     }
 
 
@@ -927,11 +1016,11 @@ def _write_outputs(
                 path.unlink()
 
 
-def _reset_determinism(torch: Any) -> None:
-    random.seed(SEED)
-    torch.manual_seed(SEED)
+def _reset_determinism(torch: Any, seed: int) -> None:
+    random.seed(seed)
+    torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(SEED)
+        torch.cuda.manual_seed_all(seed)
     if hasattr(torch.backends, "cudnn"):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
@@ -939,10 +1028,16 @@ def _reset_determinism(torch: Any) -> None:
 
 def main() -> None:
     args = parse_args()
-    if args.seed != SEED:
-        raise ValueError("Experiment 2A evaluation supports only frozen seed 42.")
+    TRAINING_RUNNER._validate_training_seed(args.seed)
 
     manifest, manifest_metadata = _validate_manifest(args.manifest)
+    experiment_output = TRAINING_RUNNER._validate_seed_output_path(
+        args.experiment_output
+        if args.experiment_output is not None
+        else TRAINING_RUNNER._seed_output_root(args.seed),
+        args.seed,
+        "--experiment-output",
+    )
     ruli_root = args.ruli_root.resolve()
     ruli_text_dir = ruli_root / "text"
     shadow_path = (
@@ -964,11 +1059,14 @@ def main() -> None:
         / "gpt2"
         / "selective_dataset_prefixed_smoke_700"
     )
-    checkpoints = _checkpoint_paths(args.experiment_output)
+    checkpoints = _checkpoint_paths(experiment_output)
     checkpoint_metadata = {
         name: _checkpoint_metadata(path, name)
         for name, path in checkpoints.items()
     }
+    training_run_metadata = _validate_training_run_metadata(
+        experiment_output, args.seed, manifest
+    )
     original_metadata = None
     if args.original_checkpoint is not None:
         original_metadata = _checkpoint_metadata(
@@ -1010,7 +1108,8 @@ def main() -> None:
 
     print(
         "[VERIFY] Frozen manifest, shadow artifact, target partitions, target "
-        "rows, upstream loss path, and all four seed-42 checkpoints passed."
+        f"rows, upstream loss path, and all four seed-{args.seed} checkpoints "
+        "passed."
     )
     if args.validate_only:
         print(
@@ -1019,7 +1118,7 @@ def main() -> None:
         )
         return
 
-    output_dir = args.experiment_output.resolve() / "evaluation"
+    output_dir = experiment_output / "evaluation"
     occupied = [
         output_dir / name
         for name in OUTPUT_FILENAMES
@@ -1031,7 +1130,7 @@ def main() -> None:
             + ", ".join(str(path) for path in occupied)
         )
 
-    _reset_determinism(torch)
+    _reset_determinism(torch, args.seed)
     device = torch.device(args.device)
     unlearn_ids = manifest["evaluation_ids"]["unlearn_ids"]
     out_ids = manifest["evaluation_ids"]["out_ids"]
@@ -1048,7 +1147,7 @@ def main() -> None:
 
     original_out_losses: dict[int, float] | None = None
     if args.original_checkpoint is not None:
-        _reset_determinism(torch)
+        _reset_determinism(torch, args.seed)
         original_model = AutoModelForCausalLM.from_pretrained(
             args.original_checkpoint.resolve()
         ).to(device)
@@ -1070,7 +1169,7 @@ def main() -> None:
     aggregate_metrics: dict[str, Any] = {}
     for condition in CONDITIONS:
         print(f"[INFO] Evaluating {condition} with upstream RULI text loss.")
-        _reset_determinism(torch)
+        _reset_determinism(torch, args.seed)
         model = AutoModelForCausalLM.from_pretrained(checkpoints[condition]).to(device)
         condition_rows, condition_metrics = _evaluate_condition(
             condition,
@@ -1124,7 +1223,7 @@ def main() -> None:
     summary = {
         "schema_version": 1,
         "experiment": "2A",
-        "seed": SEED,
+        "seed": args.seed,
         "single_seed_diagnostic_only": True,
         "preregistered_hypothesis": {
             "contrast": "privacy_log_odds_LOW - privacy_log_odds_PLACEBO",
@@ -1136,6 +1235,7 @@ def main() -> None:
         "shadow_artifact": shadow_metadata,
         "target_dataset": target_metadata,
         "checkpoints": checkpoint_metadata,
+        "training_run_metadata": training_run_metadata,
         "original_checkpoint": original_metadata,
         "sample_counts": {
             "IN_partition": EXPECTED_SPLIT_COUNT,
