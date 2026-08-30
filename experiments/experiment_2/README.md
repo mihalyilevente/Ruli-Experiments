@@ -39,3 +39,57 @@ The runner refuses to overwrite an existing checkpoint or metadata file.
 This phase generates training checkpoints only. It does not run KDE/RULI
 evaluation, calculate privacy or efficacy, train shadow models, loop over five
 seeds, or implement Experiment 2B.
+
+## Experiment 2A: seed-42 evaluation
+
+`evaluate_experiment_2a.py` validates the frozen manifest, exact 9-shadow
+artifact, official target dataset, all four seed-42 checkpoint directories, and
+the upstream RULI text-loss behavior. It evaluates HIGH, LOW, and PLACEBO and
+writes identifier-aligned per-sample privacy scores for all 200 UNLEARN and 200
+OUT samples. The primary output is the preregistered paired contrast
+`privacy_log_odds_LOW - privacy_log_odds_PLACEBO` for the 28 supported samples.
+
+Validate the complete input layout without loading model weights:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/evaluate_experiment_2a.py \
+  --seed 42 \
+  --ruli-root /workspace/Ruli \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_42 \
+  --device cuda:0 \
+  --validate-only
+```
+
+Run the seed-42 evaluation explicitly (it is never launched automatically):
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/evaluate_experiment_2a.py \
+  --seed 42 \
+  --ruli-root /workspace/Ruli \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2a/seed_42 \
+  --device cuda:0
+```
+
+The reference efficacy evaluator scores UNLEARN losses from the final model and
+OUT losses from the original pre-unlearning model. The training runner did not
+save that original model, so the default evaluation exports exact efficacy
+scores for UNLEARN and intentionally leaves OUT efficacy fields blank. If an
+independently preserved, provenance-matched original checkpoint exists, pass it
+with `--original-checkpoint` to reproduce OUT efficacy and aggregate efficacy
+metrics. The shared `post_npo_pre_final_ft` checkpoint is never used as a
+substitute.
+
+Outputs are written under the seed directory's `evaluation/` subdirectory:
+
+- `per_sample_scores.csv`
+- `primary_contrast.csv`
+- `evaluation_summary.json`
+
+The evaluator refuses to overwrite these outputs and does not train models,
+retrain shadows, change thresholds, select post-hoc cohorts, or run other seeds.
