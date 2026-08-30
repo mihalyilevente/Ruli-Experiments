@@ -21,6 +21,15 @@ SPEC = importlib.util.spec_from_file_location("run_experiment_2a", RUNNER_PATH)
 RUNNER = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(RUNNER)
+ORCHESTRATOR_PATH = (
+    REPOSITORY_ROOT / "experiments" / "experiment_2" / "run_remaining_seeds.py"
+)
+ORCHESTRATOR_SPEC = importlib.util.spec_from_file_location(
+    "run_remaining_seeds", ORCHESTRATOR_PATH
+)
+ORCHESTRATOR = importlib.util.module_from_spec(ORCHESTRATOR_SPEC)
+assert ORCHESTRATOR_SPEC.loader is not None
+ORCHESTRATOR_SPEC.loader.exec_module(ORCHESTRATOR)
 
 
 def write_rehashed_manifest(payload, path):
@@ -66,6 +75,53 @@ class Experiment2AManifestTests(unittest.TestCase):
             write_rehashed_manifest(payload, path)
             with self.assertRaisesRegex(ValueError, "is not true"):
                 RUNNER._load_and_validate_manifest(path)
+
+    def test_rejects_a_different_internally_valid_manifest_hash(self):
+        payload = copy.deepcopy(self.manifest)
+        payload["created_at_utc"] = "test-only-change"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            write_rehashed_manifest(payload, path)
+            with self.assertRaisesRegex(ValueError, "Frozen intervention manifest"):
+                RUNNER._load_and_validate_manifest(path)
+
+    def test_all_preregistered_training_seeds_are_supported(self):
+        for seed in (42, 43, 44, 45, 46):
+            RUNNER._validate_training_seed(seed)
+            self.assertEqual(RUNNER._seed_output_root(seed).name, f"seed_{seed}")
+        with self.assertRaisesRegex(ValueError, "must be preregistered"):
+            RUNNER._validate_training_seed(47)
+
+    def test_seed_output_path_must_match_requested_seed(self):
+        matching = Path("results") / "experiment_2a" / "seed_43"
+        self.assertEqual(
+            RUNNER._validate_seed_output_path(matching, 43, "--output-root").name,
+            "seed_43",
+        )
+        with self.assertRaisesRegex(ValueError, "seed_43"):
+            RUNNER._validate_seed_output_path(
+                Path("results") / "experiment_2a" / "seed_42",
+                43,
+                "--output-root",
+            )
+
+    def test_training_arguments_receive_model_and_data_seed(self):
+        class FakeTrainingArguments:
+            def __init__(self, **kwargs):
+                self.seed = kwargs["seed"]
+                self.data_seed = kwargs["data_seed"]
+
+        class FakeRuliUtils:
+            TrainingArguments = FakeTrainingArguments
+
+        RUNNER._configure_training_arguments_seed(FakeRuliUtils, 46)
+        training_args = FakeRuliUtils.TrainingArguments(output_dir="unused")
+        self.assertEqual(training_args.seed, 46)
+        self.assertEqual(training_args.data_seed, 46)
+
+    def test_remaining_seed_orchestrator_can_never_run_seed_42(self):
+        self.assertEqual(ORCHESTRATOR.SEEDS, (43, 44, 45, 46))
+        self.assertNotIn(42, ORCHESTRATOR.SEEDS)
 
 
 if __name__ == "__main__":
