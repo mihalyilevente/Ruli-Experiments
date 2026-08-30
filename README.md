@@ -82,5 +82,7 @@ for the exact construction and all path options.
 - [Experiment 1](experiments/experiment_1/README.md): export the exact retained
   corpus and per-sample RULI scores, build aligned UNLEARN/RETAIN embeddings, and
   measure and statistically analyze source-specific retained semantic support.
+- [Experiment 2](experiments/experiment_2/README.md): run the frozen semantic
+  support intervention from one shared post-NPO checkpoint.
 
 Generated data, checkpoints, and results are excluded from version control.
