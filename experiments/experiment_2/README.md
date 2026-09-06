@@ -1,8 +1,8 @@
 # Experiment 2
 
 The frozen protocol and intervention manifest define Experiment 2 before any
-training begins. Do not regenerate or edit
-`results/intervention_manifest.json` while running Experiment 2A.
+training begins. Do not regenerate or edit `results/intervention_manifest.json`
+while running Experiment 2A or Experiment 2B.
 
 ## Experiment 2A: training
 
@@ -131,4 +131,111 @@ nohup python experiments/experiment_2/run_remaining_seeds.py \
   --device cuda:0 \
   > experiments/experiment_2/results/experiment_2a/remaining_seeds.nohup.log \
   2>&1 &
+```
+
+## Experiment 2B: full-history intervention
+
+`run_experiment_2b.py` branches before initial SFT. For each seed it persists
+one `initial_shared` GPT-2 state and independently reloads that state for HIGH,
+LOW, and PLACEBO. It resets Python, NumPy, PyTorch CPU, and all CUDA RNGs before
+each condition and passes the seed to both Hugging Face `seed` and `data_seed`.
+It hashes the complete parameter state on three preflight reloads before any
+training and again on the actual condition branches before SFT.
+
+Each branch runs the complete upstream RULI pipeline. The frozen condition target
+set is injected as follows:
+
+- initial SFT: condition target-IN + common UNLEARN + common WikiText;
+- prefix training: condition target-IN + common UNLEARN + common WikiText;
+- NPO forget data: common UNLEARN;
+- NPO retain data: condition target-IN + common WikiText;
+- final retain FT: condition target-IN + common WikiText.
+
+The runner calls the existing RULI helpers without changing their losses,
+optimizers, learning rates, batch sizes, or epoch counts. It saves each
+condition's post-prefix, pre-NPO checkpoint because that is the correct original
+model for reference efficacy evaluation. It does not require condition hashes to
+match after SFT, prefix training, NPO, or final FT.
+
+Validate seed 42's manifest, exact target and shadow artifacts, fixed target
+partition, condition datasets, 15,000-row background, and initial-state identity
+without training or persistent output:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_experiment_2b.py \
+  --seed 42 \
+  --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --device cuda:0 \
+  --validate-only
+```
+
+Run the complete seed-42 training pipeline explicitly:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_experiment_2b.py \
+  --seed 42 \
+  --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --output-root /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2b/seed_42 \
+  --device cuda:0
+```
+
+Outputs are isolated under `results/experiment_2b/seed_<SEED>/`: one shared
+initial checkpoint, three condition-specific pre-NPO checkpoints, three final
+checkpoints, trainer work directories, and `run_metadata.json`. Existing
+Experiment 2A outputs are never read as training state or overwritten.
+
+## Experiment 2B: evaluation
+
+`evaluate_experiment_2b.py` reuses the exact fixed-9-shadow validation,
+last-seven-token loss, KDE definitions, bounded privacy formula, target
+partitions, supported cohort, negative-control cohort, and paired
+LOW-minus-PLACEBO logic from the validated Experiment 2A evaluator. For efficacy,
+each final model is paired with its own saved pre-NPO model; a post-NPO model is
+never substituted.
+
+Evaluate seed 42:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/evaluate_experiment_2b.py \
+  --seed 42 \
+  --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2b/seed_42 \
+  --device cuda:0
+```
+
+The primary outcome remains
+`privacy_log_odds_LOW - privacy_log_odds_PLACEBO` on the same 28 supported
+samples, with preregistered direction `LOW < PLACEBO`. The same 121-sample
+negative-control cohort is reported. The evaluator writes the same three output
+formats below the seed's `evaluation/` directory and performs no cross-seed
+statistics or outcome interpretation.
+
+## Sequential Experiment 2B seeds 42--46
+
+`run_experiment_2b_seeds.py` runs training followed by evaluation for seeds 42,
+43, 44, 45, and 46 in order. It skips complete seeds, rejects partial outputs,
+logs each seed separately, and stops at the first failure. It is never launched
+automatically.
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_experiment_2b_seeds.py \
+  --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --output-base /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2b \
+  --device cuda:0
 ```
