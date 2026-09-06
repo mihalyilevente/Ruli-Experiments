@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -65,6 +66,29 @@ def _any_markers_exist(root: Path, markers: tuple[str, ...]) -> bool:
     return any((root / marker).exists() for marker in markers)
 
 
+def _cleanup_completed_trainer_work(seed_root: Path) -> bool:
+    """Remove only Trainer scratch belonging to a marker-complete seed."""
+
+    resolved_seed = seed_root.resolve()
+    if not _all_markers_exist(resolved_seed, TRAINING_MARKERS):
+        raise RuntimeError(
+            "Refusing Trainer cleanup because training markers are incomplete: "
+            f"{resolved_seed}"
+        )
+    scratch = (resolved_seed / "trainer_work").resolve()
+    if scratch.parent != resolved_seed or scratch.name != "trainer_work":
+        raise RuntimeError(f"Refusing unexpected Trainer cleanup target: {scratch}")
+    if not scratch.exists():
+        return False
+    if not scratch.is_dir():
+        raise RuntimeError(f"Trainer work target is not a directory: {scratch}")
+    shutil.rmtree(scratch)
+    if scratch.exists():
+        raise RuntimeError(f"Trainer work cleanup did not finish: {scratch}")
+    print(f"[CLEANUP] Removed completed-seed Trainer scratch: {scratch}", flush=True)
+    return True
+
+
 def _run(command: list[str], log_path: Path) -> None:
     timestamp = datetime.now(timezone.utc).isoformat()
     with log_path.open("a", encoding="utf-8", buffering=1) as log:
@@ -121,6 +145,7 @@ def main() -> None:
         training_complete = _all_markers_exist(seed_root, TRAINING_MARKERS)
         evaluation_complete = _all_markers_exist(seed_root, EVALUATION_MARKERS)
         if training_complete and evaluation_complete:
+            _cleanup_completed_trainer_work(seed_root)
             print(f"[SKIP] Seed {seed} is already complete: {seed_root}", flush=True)
             continue
         if not training_complete and (
@@ -150,6 +175,13 @@ def main() -> None:
                 ],
                 log_path,
             )
+            if not _all_markers_exist(seed_root, TRAINING_MARKERS):
+                raise RuntimeError(
+                    f"Seed {seed} training exited successfully but completion "
+                    f"markers are missing: {seed_root}"
+                )
+
+        _cleanup_completed_trainer_work(seed_root)
 
         print(f"[RUN] Seed {seed} evaluation; log: {log_path}", flush=True)
         _run(

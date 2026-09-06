@@ -189,8 +189,12 @@ python experiments/experiment_2/run_experiment_2b.py \
 
 Outputs are isolated under `results/experiment_2b/seed_<SEED>/`: one shared
 initial checkpoint, three condition-specific pre-NPO checkpoints, three final
-checkpoints, trainer work directories, and `run_metadata.json`. Existing
-Experiment 2A outputs are never read as training state or overwritten.
+checkpoints, and `run_metadata.json`. After each successful training stage, its
+temporary Hugging Face checkpoint and optimizer state under `trainer_work` are
+deleted; the returned best model remains in memory and required durable
+checkpoints are saved first. If a stage fails, its scratch directory is retained
+for diagnosis. Existing Experiment 2A outputs are never read as training state
+or overwritten.
 
 ## Experiment 2B: evaluation
 
@@ -226,8 +230,14 @@ statistics or outcome interpretation.
 
 `run_experiment_2b_seeds.py` runs training followed by evaluation for seeds 42,
 43, 44, 45, and 46 in order. It skips complete seeds, rejects partial outputs,
-logs each seed separately, and stops at the first failure. It is never launched
-automatically.
+logs each seed separately, and stops at the first failure. Before skipping or
+evaluating a marker-complete seed, it also removes legacy `trainer_work` left by
+older runner versions. It never deletes scratch from a partial seed and is never
+launched automatically.
+
+An output directory from a failed older run remains partial by design and must
+be inspected and removed explicitly before retrying that seed. The orchestrator
+never deletes partial output, even when its `trainer_work` is large.
 
 ```bash
 cd /workspace/Ruli-Experiments

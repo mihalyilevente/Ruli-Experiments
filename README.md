@@ -38,9 +38,11 @@ The setup script creates `/workspace/Ruli/.venv` when necessary, reuses an
 existing PyTorch installation (including the RunPod base image's CUDA build), and
 installs the tested RULI/Experiment 1 dependencies. It preserves
 `transformers==4.39.1`, `accelerate==0.28.0`, and
-`huggingface-hub==0.25.0`. For Python 3.12 it uses NumPy 1.26.4 instead of the
-upstream Python-incompatible `numpy==1.23.5` pin. Set `RULI_ROOT` or
-`RULI_VENV_DIR` to override the default locations.
+`huggingface-hub==0.25.0`. It uses `datasets==5.0.1` and `pyarrow==21.0.0`
+because the frozen target artifact stores list columns with the newer `List`
+feature schema. For Python 3.12 it uses NumPy 1.26.4 instead of the upstream
+Python-incompatible `numpy==1.23.5` pin. Set `RULI_ROOT` or `RULI_VENV_DIR` to
+override the default locations.
 
 The script finishes with `pip check`, an import check, and a version report that
 includes Python, torch, CUDA availability, Transformers, Accelerate, Datasets,

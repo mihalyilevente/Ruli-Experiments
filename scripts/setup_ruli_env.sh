@@ -44,11 +44,13 @@ fi
 
 # RULI compatibility pins plus reproducible Python-3.12-compatible runtime pins.
 # NumPy 1.26.4 replaces upstream's Python-3.12-incompatible numpy==1.23.5 pin.
+# Datasets 5.0.1 and PyArrow 21 understand the frozen target artifact's List
+# feature schema; Datasets 2.21 fails while decoding its dataset_info.json.
 python -m pip install \
     "transformers==4.39.1" \
     "accelerate==0.28.0" \
     "huggingface-hub==0.25.0" \
-    "datasets==2.21.0" \
+    "datasets==5.0.1" \
     "numpy==1.26.4" \
     "scikit-learn==1.5.2" \
     "scipy==1.14.1" \
@@ -59,7 +61,7 @@ python -m pip install \
     "sentence-transformers==3.0.1" \
     "networkx==3.3" \
     "pandas==2.2.3" \
-    "pyarrow==17.0.0"
+    "pyarrow==21.0.0"
 
 python -m pip install --no-deps -e "${EXPERIMENT_ROOT}"
 
