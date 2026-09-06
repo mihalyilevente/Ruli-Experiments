@@ -199,6 +199,69 @@ class Experiment2BProtocolTests(unittest.TestCase):
     def test_orchestrator_includes_all_five_seeds(self):
         self.assertEqual(ORCHESTRATOR.SEEDS, (42, 43, 44, 45, 46))
 
+    def test_successful_stage_cleanup_is_scoped_and_records_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scratch = Path(directory) / "trainer_work"
+            stage = scratch / "HIGH" / "initial_sft"
+            stage.mkdir(parents=True)
+            payload = b"trainer-state"
+            (stage / "optimizer.pt").write_bytes(payload)
+            record = RUNNER._cleanup_successful_trainer_stage(stage, scratch)
+            self.assertFalse(stage.exists())
+            self.assertTrue(record["removed"])
+            self.assertEqual(record["removed_bytes"], len(payload))
+
+            unexpected = scratch / "HIGH" / "unknown_stage"
+            unexpected.mkdir(parents=True)
+            with self.assertRaisesRegex(ValueError, "unexpected Trainer stage"):
+                RUNNER._cleanup_successful_trainer_stage(unexpected, scratch)
+            self.assertTrue(unexpected.exists())
+
+    def test_completed_seed_cleanup_preserves_durable_markers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            seed_root = Path(directory) / "seed_42"
+            for marker in ORCHESTRATOR.TRAINING_MARKERS:
+                path = seed_root / marker
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("marker", encoding="utf-8")
+            scratch_file = seed_root / "trainer_work" / "HIGH" / "optimizer.pt"
+            scratch_file.parent.mkdir(parents=True)
+            scratch_file.write_bytes(b"scratch")
+
+            self.assertTrue(
+                ORCHESTRATOR._cleanup_completed_trainer_work(seed_root)
+            )
+            self.assertFalse((seed_root / "trainer_work").exists())
+            self.assertTrue(
+                all(
+                    (seed_root / marker).is_file()
+                    for marker in ORCHESTRATOR.TRAINING_MARKERS
+                )
+            )
+
+    def test_completed_seed_cleanup_rejects_partial_seed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            seed_root = Path(directory) / "seed_43"
+            scratch = seed_root / "trainer_work"
+            scratch.mkdir(parents=True)
+            with self.assertRaisesRegex(RuntimeError, "markers are incomplete"):
+                ORCHESTRATOR._cleanup_completed_trainer_work(seed_root)
+            self.assertTrue(scratch.exists())
+
+    def test_environment_pins_support_frozen_list_schema(self):
+        setup = (REPOSITORY_ROOT / "scripts" / "setup_ruli_env.sh").read_text(
+            encoding="utf-8"
+        )
+        pyproject = (REPOSITORY_ROOT / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('"datasets==5.0.1"', setup)
+        self.assertIn('"pyarrow==21.0.0"', setup)
+        self.assertNotIn('"datasets==2.21.0"', setup)
+        self.assertNotIn('"pyarrow==17.0.0"', setup)
+        self.assertIn('"datasets>=5.0.1"', pyproject)
+        self.assertIn('"pyarrow>=21.0.0"', pyproject)
+
     def test_evaluator_accepts_divergent_post_npo_hashes(self):
         shared = "a" * 64
         manifest = self.manifest

@@ -13,6 +13,7 @@ import argparse
 import gc
 import importlib.util
 import json
+import shutil
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -36,6 +37,7 @@ ATTACK_SIZE = 15_000
 TARGET_COUNT = 200
 UNLEARN_COUNT = 200
 CONDITION_NAMES = ("HIGH", "LOW", "PLACEBO")
+TRAINER_STAGE_NAMES = ("initial_sft", "prefix", "npo", "final_retain_ft")
 
 
 def _load_experiment_2a_runner() -> Any:
@@ -284,6 +286,67 @@ def _checkpoint_paths(output_root: Path) -> dict[str, Path]:
         paths[f"{condition}_pre_npo"] = output_root / f"{condition}_pre_npo"
         paths[f"{condition}_final"] = output_root / f"{condition}_final"
     return paths
+
+
+def _directory_size_bytes(path: Path) -> int:
+    return sum(
+        child.stat().st_size
+        for child in path.rglob("*")
+        if child.is_file() and not child.is_symlink()
+    )
+
+
+def _cleanup_successful_trainer_stage(
+    stage_path: Path, scratch_root: Path
+) -> dict[str, Any]:
+    """Remove only a known, successful Experiment 2B Trainer stage directory."""
+
+    resolved_root = scratch_root.resolve()
+    resolved_stage = stage_path.resolve()
+    try:
+        relative = resolved_stage.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"Refusing to clean Trainer path outside scratch root: {resolved_stage}"
+        ) from exc
+    if (
+        len(relative.parts) != 2
+        or relative.parts[0] not in CONDITION_NAMES
+        or relative.parts[1] not in TRAINER_STAGE_NAMES
+    ):
+        raise ValueError(
+            "Refusing to clean unexpected Trainer stage path: "
+            f"{resolved_stage} relative to {resolved_root}"
+        )
+    if not resolved_stage.is_dir():
+        raise FileNotFoundError(
+            f"Successful Trainer stage directory is missing: {resolved_stage}"
+        )
+    removed_bytes = _directory_size_bytes(resolved_stage)
+    shutil.rmtree(resolved_stage)
+    if resolved_stage.exists():
+        raise RuntimeError(f"Trainer stage cleanup did not finish: {resolved_stage}")
+    print(
+        f"[CLEANUP] Removed successful Trainer scratch {relative.as_posix()} "
+        f"({removed_bytes} bytes)."
+    )
+    return {
+        "path": str(resolved_stage),
+        "removed": True,
+        "removed_bytes": removed_bytes,
+        "reason": "stage completed and its model remains in memory or durable output",
+    }
+
+
+def _remove_empty_scratch_parents(condition_work: Path, scratch_root: Path) -> None:
+    for directory in (condition_work, scratch_root):
+        try:
+            directory.rmdir()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            # A failed or unexpected stage remains for diagnosis.
+            continue
 
 
 def _build_condition_datasets(
@@ -535,6 +598,7 @@ def main() -> None:
     pre_npo_hashes: dict[str, str] = {}
     post_npo_hashes: dict[str, str] = {}
     final_hashes: dict[str, str] = {}
+    trainer_cleanup: dict[str, dict[str, Any]] = {}
     for condition in CONDITION_NAMES:
         print(f"[INFO] Running complete Experiment 2B pipeline for {condition}.")
         COMMON._reset_rng(args.seed, torch, np)
@@ -548,7 +612,9 @@ def main() -> None:
         model = model.to(args.device)
         COMMON._reset_rng(args.seed, torch, np)
         condition_work = scratch_root / condition
-        with COMMON._working_directory(condition_work / "initial_sft"):
+        condition_cleanup: dict[str, Any] = {}
+        initial_sft_work = condition_work / "initial_sft"
+        with COMMON._working_directory(initial_sft_work):
             model = ruli_utils.train_sft(
                 model,
                 condition_initial_data[condition],
@@ -556,7 +622,12 @@ def main() -> None:
                 tokenizer,
                 SFT_EPOCHS,
             )
-        with COMMON._working_directory(condition_work / "prefix"):
+        condition_cleanup["initial_sft"] = _cleanup_successful_trainer_stage(
+            initial_sft_work, scratch_root
+        )
+
+        prefix_work = condition_work / "prefix"
+        with COMMON._working_directory(prefix_work):
             model = ruli_utils.train_prefix(
                 model,
                 condition_initial_data[condition],
@@ -564,16 +635,21 @@ def main() -> None:
                 tokenizer,
                 PREFIX_EPOCHS,
             )
-            pre_npo_hashes[condition] = COMMON._parameter_sha256(model, torch)
-            COMMON._save_checkpoint(
-                model, tokenizer, checkpoints[f"{condition}_pre_npo"]
-            )
+        pre_npo_hashes[condition] = COMMON._parameter_sha256(model, torch)
+        COMMON._save_checkpoint(
+            model, tokenizer, checkpoints[f"{condition}_pre_npo"]
+        )
+        condition_cleanup["prefix"] = _cleanup_successful_trainer_stage(
+            prefix_work, scratch_root
+        )
+
         unlearning_args = SimpleNamespace(
             device=args.device,
             unlearn_epochs=NPO_EPOCHS,
             unlearn_method="npo",
         )
-        with COMMON._working_directory(condition_work / "npo"):
+        npo_work = condition_work / "npo"
+        with COMMON._working_directory(npo_work):
             model = ruli_utils.unlearn_model(
                 model,
                 unlearn_data,
@@ -583,7 +659,12 @@ def main() -> None:
                 unlearning_args,
             )
         post_npo_hashes[condition] = COMMON._parameter_sha256(model, torch)
-        with COMMON._working_directory(condition_work / "final_retain_ft"):
+        condition_cleanup["npo"] = _cleanup_successful_trainer_stage(
+            npo_work, scratch_root
+        )
+
+        final_ft_work = condition_work / "final_retain_ft"
+        with COMMON._working_directory(final_ft_work):
             model = ruli_utils.train_sft(
                 model,
                 condition_retain_data[condition],
@@ -593,9 +674,19 @@ def main() -> None:
             )
         final_hashes[condition] = COMMON._parameter_sha256(model, torch)
         COMMON._save_checkpoint(model, tokenizer, checkpoints[f"{condition}_final"])
+        condition_cleanup["final_retain_ft"] = _cleanup_successful_trainer_stage(
+            final_ft_work, scratch_root
+        )
+        trainer_cleanup[condition] = condition_cleanup
+        _remove_empty_scratch_parents(condition_work, scratch_root)
         del model
         COMMON._cleanup_cuda(torch)
 
+    if scratch_root.exists():
+        raise RuntimeError(
+            "Successful Experiment 2B run left unexpected Trainer scratch: "
+            f"{scratch_root}"
+        )
     actual_identity = _assert_initial_parameter_identity(
         shared_hash, actual_starting_hashes, "Actual training branches"
     )
@@ -739,6 +830,20 @@ def main() -> None:
             "reset_before_each_actual_condition_load": True,
             "reset_immediately_before_each_condition_pipeline": True,
         },
+        "trainer_work_cleanup": {
+            "policy": (
+                "remove each successful stage after its returned model is in memory "
+                "and any required durable checkpoint is saved; retain a failed "
+                "stage directory for diagnosis"
+            ),
+            "stages": trainer_cleanup,
+            "total_removed_bytes": sum(
+                record["removed_bytes"]
+                for condition_records in trainer_cleanup.values()
+                for record in condition_records.values()
+            ),
+            "scratch_root_exists_after_success": scratch_root.exists(),
+        },
         "validation_results": {
             **protocol_validation,
             "frozen_manifest_sha256": True,
@@ -748,6 +853,7 @@ def main() -> None:
             "shared_wikitext_row_identity": True,
             "shared_initial_parameter_identity": True,
             "no_post_npo_identity_requirement": True,
+            "successful_trainer_work_removed": not scratch_root.exists(),
         },
         "software": COMMON._software_metadata(torch),
         "deviations_from_reference_ruli_behavior": [],

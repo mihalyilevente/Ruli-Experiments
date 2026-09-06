@@ -9,9 +9,10 @@ description = "Experiments on semantic dependencies and NPO/DPO machine unlearni
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "datasets>=2.18",
+    "datasets>=5.0.1",
     "networkx>=3.2",
     "numpy>=1.23.5",
+    "pyarrow>=21.0.0",
     "scikit-learn>=1.2",
     "scipy>=1.9",
     "sentence-transformers>=3.0",
