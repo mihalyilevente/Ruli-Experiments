@@ -249,3 +249,135 @@ python experiments/experiment_2/run_experiment_2b_seeds.py \
   --output-base /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2b \
   --device cuda:0
 ```
+
+## Experiment 2C: immediate NPO effect
+
+`run_experiment_2c.py` reuses Experiment 2B's frozen memberships, dataset builder,
+initial-state save/reload verification, RNG seeding, and upstream training
+helpers. Experiments 2A and 2B and their results remain unchanged. Every branch
+starts from the same freshly loaded **pretrained `gpt2` parameters**, as in 2B;
+this does not introduce random-from-scratch GPT-2 initialization.
+
+Each condition runs exactly:
+
+```text
+initial_shared -> initial SFT -> prefix -> SAVE pre_npo -> NPO -> SAVE post_npo
+```
+
+`_run_branch()` saves `<CONDITION>_pre_npo/` after `train_prefix()` returns and
+before calling `unlearn_model()`. It saves `<CONDITION>_post_npo/` immediately
+after `unlearn_model(..., unlearn_method="npo", unlearn_epochs=15)` returns.
+There is no final retain-FT call. Successful Trainer scratch is removed using
+the 2B cleanup helper after required durable checkpoints are saved; a failed
+stage is retained for diagnosis. The pipeline never trains shadows.
+
+The requested SFT/prefix/NPO epochs remain 5/1/15. Upstream optimizer behavior,
+learning rates (SFT 5e-5, prefix 1e-5, NPO 5e-5), batch sizes, NPO beta 0.1,
+gradient accumulation, and SFT early stopping/best-model selection remain as
+in 2B. Five SFT epochs remains the upstream maximum, with its existing early
+stopping behavior. Condition target-IN plus shared UNLEARN plus the fixed
+15,000 WikiText examples is used for both SFT and prefix training. NPO receives
+the same UNLEARN forget set and condition target-IN plus shared WikiText as
+retain data. The frozen S/U/P/R, threshold, target partition, background seed
+42, and 9-shadow artifact are unchanged.
+
+The evaluator uses the **same 200 ordered UNLEARN IDs and immutable token
+sequences** for all six pre/post inference passes. It reuses the validated 2A
+`_run_reference_inference()` helper, which calls the actual
+`Ruli/text/utils.py:MIAEvaluator._batch_inference` implementation: mean next-token
+cross entropy over the final seven valid prediction positions. It reuses the
+upstream loss behavioral check and frozen dataset storage/fingerprint,
+identifier, token-count, and supported-text SHA-256 checks. It rejects missing,
+extra, reordered, or nonfinite measurements. The summary records the ordered
+IDs and token-sequence hash. Initial parameters are hashed on all three
+independent preflight reloads and all actual training starts; evaluation checks
+all seven loaded checkpoint hashes against training metadata. Post-training
+parameters are expected to differ between conditions.
+
+For sample `s`, seed `r`, and condition `c`:
+
+```text
+delta_loss(c,s,r) = post_npo_loss(c,s,r) - pre_npo_loss(c,s,r)
+DiD(s,r) = delta_loss(LOW,s,r) - delta_loss(PLACEBO,s,r)
+```
+
+Larger positive delta means NPO increased forgotten-target loss more strongly.
+Positive DiD supports the directional 2C hypothesis. The primary cohort is the
+28 frozen supported S samples. The 121 negative controls and all 200 UNLEARN
+samples receive separate descriptive summaries, with no five-seed bootstrap.
+
+Secondary privacy scores use `unlearn_original` versus `out_original` before
+NPO, and `unlearn_unlearned` versus `out_unlearned` after NPO. Both use the
+existing KDE bandwidth, log-density difference, and bounded formula
+`p_positive / (p_positive + p_negative + 1e-12)`. Each sample must have three
+finite observations per reference distribution from the fixed nine models;
+missing original-state observations or singular KDEs fail validation. **Pre/post
+KDE reference distributions differ, so their numerical difference is only a
+secondary diagnostic, not the primary DiD.** The primary measurement is raw
+last-seven-token loss change. Upstream original-state shadow losses are captured
+after SFT and prefix training. The fixed unlearned-state shadow distributions
+include final retain FT, while the 2C target post-NPO checkpoints precede that
+stage; this additional mismatch is recorded in the secondary-scoring metadata.
+No OUT inference or attack AUC is needed for this UNLEARN-only paired measurement.
+
+From the existing RULI environment on the artifact host, validate seed 42 without
+training (temporary CPU GPT-2 reloads verify identical initial parameters):
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_experiment_2c.py \
+  --seed 42 --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --device cpu --validate-only
+```
+
+Train seed 42 only when explicitly launched:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/run_experiment_2c.py \
+  --seed 42 --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --output-root /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2c/seed_42 \
+  --device cuda:0
+```
+
+Evaluate seed 42 after training:
+
+```bash
+cd /workspace/Ruli-Experiments
+python experiments/experiment_2/evaluate_experiment_2c.py \
+  --seed 42 --ruli-root /workspace/Ruli \
+  --manifest /workspace/Ruli-Experiments/experiments/experiment_2/results/intervention_manifest.json \
+  --shadow-path /workspace/Ruli/core/attack/attack_inferences/WikiText103/shadow_9_attack_random_npo_gpt2.pth \
+  --target-data-path /workspace/Ruli/text/data/WikiText-103-local/gpt2/selective_dataset_prefixed_smoke_700 \
+  --experiment-output /workspace/Ruli-Experiments/experiments/experiment_2/results/experiment_2c/seed_42 \
+  --device cuda:0
+```
+
+Use `--device cpu` for CPU inference. Adding `--validate-only` to the evaluator
+checks frozen inputs, metadata, loss behavior, KDEs, and checkpoint structure
+without loading model weights; actual parameter hashes are verified during
+evaluation. The runner also supports `--validate-manifest-only` for a lightweight
+check that does **not** establish artifact or model readiness.
+
+All checkpoints and `run_metadata.json` live under
+`results/experiment_2c/seed_<SEED>/`. Evaluation writes:
+
+- `evaluation/per_sample_pre_post.csv`: 600 rows (200 samples x 3 conditions),
+  with pre/post/delta loss, supported/control flags, and both privacy outcomes;
+- `evaluation/primary_contrast.csv`: 28 rows in frozen S order, including all
+  HIGH/LOW/PLACEBO pre/post/delta losses and LOW/HIGH-minus-PLACEBO deltas;
+- `evaluation/evaluation_summary.json`: mean/median pre/post/delta by condition,
+  DiD mean/median and positive count/fraction for S, controls, and all UNLEARN,
+  plus artifact, checkpoint, source, and alignment provenance.
+
+Existing outputs are never overwritten. Seeds 42--46 are accepted individually;
+no multi-seed launcher is provided for 2C. The intentional changes from 2B are
+omitting final retain FT, saving the immediate post-NPO checkpoint, using paired
+loss DiD as primary, and using original-state KDE references before NPO. No
+other upstream training or loss algorithm is changed.
