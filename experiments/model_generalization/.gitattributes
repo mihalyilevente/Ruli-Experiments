@@ -1,0 +1,4 @@
+# Preserve export bytes so recorded SHA-256 hashes survive checkout on Windows.
+reports/** -text whitespace=cr-at-eol
+# Raw terminal logs contain carriage returns and progress-bar control sequences.
+reports/**/logs/*.log -diff

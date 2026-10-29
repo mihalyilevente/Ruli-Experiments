@@ -1,0 +1,56 @@
+{
+  "approval_scope": "Capped last-seven loss, logged 25 exceptions, protected primary/control cohorts, one deterministic map shared by GPT-2 and Pythia. No full training authorized.",
+  "approved_date": "2026-10-29",
+  "assignment_payload_sha256": "e5cfe50ce1ac8a040d13c440d2ad75c0a0048a4b521e931be69e05b5d6ce29c8",
+  "comparison_kind": "fresh_matched_comparison",
+  "loss_policy": "min(7, seq_len - 1)",
+  "manifest_content_sha256": "750c4cf9bc470091a05ff9e10fcf8f8cf6914f51a8a733b2e1528470ea02bf3b",
+  "models": {
+    "EleutherAI/pythia-160m": {
+      "model_name": "EleutherAI/pythia-160m",
+      "model_type": "gpt_neox",
+      "resolved_from": "main",
+      "revision": "50f5173d932e8e61f858120bcb800b97af589f46"
+    },
+    "gpt2": {
+      "model_name": "gpt2",
+      "model_type": "gpt2",
+      "resolved_from": "main",
+      "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e"
+    }
+  },
+  "original_assignment_reproduced": false,
+  "protocol_id": "matched_models_v1",
+  "pythia_exception_ids": [
+    52,
+    59,
+    62,
+    74,
+    75,
+    117,
+    138,
+    175,
+    209,
+    239,
+    314,
+    315,
+    319,
+    350,
+    365,
+    368,
+    371,
+    402,
+    457,
+    488,
+    500,
+    518,
+    521,
+    525,
+    653
+  ],
+  "raw_membership_sha256": {
+    "background": "775e4b786e7704b800fd217ffd3d1e3e615f177e2baecc473d09a13b4a06137f",
+    "target": "0d71e7c02209b9dbd2109c671238484d2126858ae4fad39b40bcf8c66f1fd454",
+    "validation": "f668d9f3ba677aab0cc50d84fe2f4cde92ae8e91bc53ed41a384256fb9eccf4d"
+  }
+}

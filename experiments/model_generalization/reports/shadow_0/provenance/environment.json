@@ -1,0 +1,29 @@
+{
+  "python": "3.12.3",
+  "gpu": "NVIDIA RTX PRO 4000 Blackwell",
+  "cuda": "12.8",
+  "packages": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.39.1",
+    "accelerate": "0.28.0",
+    "datasets": "5.0.1",
+    "numpy": "1.26.4",
+    "scipy": "1.14.1",
+    "huggingface-hub": "0.25.0",
+    "tokenizers": "0.15.2"
+  },
+  "environment_policy": "Existing Ruli virtualenv reused without installing or modifying packages. NumPy 1.26.4 and SciPy 1.14.1 differ from archived pip freeze (2.1.2 and 1.18.1); both new models share this recorded environment.",
+  "scope": "Two full shadow-0 jobs, Pythia then GPT-2; no target training and no automatic remaining shadows.",
+  "sources": {
+    "validate_matched_comparison.py": "06007fd31893427f6c47da225a70204c8ac67b5a7609acbfa0d14af077d1c242",
+    "train_shadows.py": "8e08a4faa0e811ce68606aeac03f66abb7a35e149f812beaaab525f4b7185aeb",
+    "training.py": "c7261e6c6e33262648309df4e616a4dae95c188578809140e57783f47cc94c3d",
+    "run_model_generalization.py": "ed17be3f386f2e837958e4d0be09622adb8ababba62ca2420e8c3a9d370f12fb",
+    "prepare_data.py": "645a8dbec3fcecb5e7c9efd9de701842cb524f9bee16ac201f549a93ca54d16b",
+    "freeze_matched_assignments.py": "be5eb3dfbc77d68f3de1ad5aac879bae44d2d8177716213eeec5bd80ad072445",
+    "evaluate_model_generalization.py": "0e184f63361054244885787c53d2c2000cc6bebaa19843ce5dd7af5000fedaf0",
+    "common.py": "1ce108b22b9fc2bb3bc5b2d4293542c7626928065b1971e532a44f7ed315d5e2",
+    "protocol/matched_models_v1/comparison.json": "dc5b2cd87f8147b19eb7c4ac65508783bf5b9fac424cac5a3c95a383614be11e",
+    "protocol/matched_models_v1/assignment_map.json": "b8c38b95b87a441cd34c061ed8758fdfd7d63ba73c7ddfb3760f35d29b3013c4"
+  }
+}

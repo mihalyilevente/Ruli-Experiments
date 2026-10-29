@@ -1,0 +1,12 @@
+{
+  "EleutherAI/pythia-160m": {
+    "revision": "50f5173d932e8e61f858120bcb800b97af589f46",
+    "model_type": "gpt_neox",
+    "resolved_from": "main"
+  },
+  "gpt2": {
+    "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "model_type": "gpt2",
+    "resolved_from": "main"
+  }
+}

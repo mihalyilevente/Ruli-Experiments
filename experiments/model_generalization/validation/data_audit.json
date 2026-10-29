@@ -1,0 +1,319 @@
+{
+  "datasets": {
+    "background": {
+      "count": 15000,
+      "fingerprint": "cf664cf69a398d7d",
+      "raw_membership_sha256": "775e4b786e7704b800fd217ffd3d1e3e615f177e2baecc473d09a13b4a06137f",
+      "tokenized_sha256": "8a5143d25fc7308b0e8972dbd0a251270b2f8cac97af549884ccbb69435c1b42"
+    },
+    "target": {
+      "count": 660,
+      "fingerprint": "fad3f468a29546e8",
+      "raw_membership_sha256": "0d71e7c02209b9dbd2109c671238484d2126858ae4fad39b40bcf8c66f1fd454",
+      "tokenized_sha256": "1abea4d2216de2ece509e1b0e62dc24a7ab0ea047ef77f9fef7fbbe9d99e19ca"
+    },
+    "validation": {
+      "count": 1617,
+      "fingerprint": "ed97e3e20b3c593d",
+      "raw_membership_sha256": "f668d9f3ba677aab0cc50d84fe2f4cde92ae8e91bc53ed41a384256fb9eccf4d",
+      "tokenized_sha256": "aad1dd7710109a2e8ba394980cf5a48691aa624f2c87773544550f4515d90078"
+    }
+  },
+  "manifest_content_sha256": "750c4cf9bc470091a05ff9e10fcf8f8cf6914f51a8a733b2e1528470ea02bf3b",
+  "model": {
+    "model_name": "EleutherAI/pythia-160m",
+    "model_type": "gpt_neox",
+    "resolved_from": "main",
+    "revision": "50f5173d932e8e61f858120bcb800b97af589f46"
+  },
+  "raw_source": {
+    "config": "wikitext-103-v1",
+    "name": "Salesforce/wikitext",
+    "revision": "b08601e04326c79dfdd32d625aee71d232d685c3"
+  },
+  "reference_target_storage": {
+    "files": [
+      {
+        "bytes": 266672,
+        "path": "data-00000-of-00001.arrow",
+        "sha256": "0dab28dc6012b1b18cd3254a0b7d200df75201be8a216d4c16dc265f52e14568"
+      },
+      {
+        "bytes": 354,
+        "path": "dataset_info.json",
+        "sha256": "db27b25a2ce3ad5f8bf4491d2d42dca3cdef292da8489bc36b774a9bab910328"
+      },
+      {
+        "bytes": 247,
+        "path": "state.json",
+        "sha256": "dafdfc161a329dacfb44670a81f38f7ff99abe50f0bd08addd32edd9b6e3c44d"
+      }
+    ],
+    "path": "D:\\Uni\\Research\\Ruli-experiments\\experiments\\model_generalization\\artifacts\\reference_gpt2\\selective_dataset_prefixed_smoke_700",
+    "storage_sha256": "5cb5ea1116ac08c537e7f4877f850c9ae71c65ebba0894686aede46db4d3dcd5"
+  },
+  "short_target_samples": [
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "90313f403ae573c2b16a307470443dd98b5774800e20940b8c65f72060cbd272",
+      "sample_id": 52,
+      "text": " Pete <unk> – Programming \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "ad6ff1a7e4ff106d11c6d0575912590f466e149e4916b7c0f4c569204fc142cd",
+      "sample_id": 59,
+      "text": " = = Early life = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "9bd3ad6bc7920a55977998062e31b2b58086ffba705bd34c7b6535f4c59d2576",
+      "sample_id": 62,
+      "text": " = = College career = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "819d36d8faea7fcf9c6560f6f7897a8787988b844fe05ec05a3185e075bb420f",
+      "sample_id": 74,
+      "text": " = = Geology = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "a321159ec12427dff8ffb71949776d53a243cf3b1cc7a043b4e2848606bb496c",
+      "sample_id": 75,
+      "text": " = New Jersey Route 50 = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "4b68e69c8542e4b45094f7992ab6cf187e625d62e83b3799678c2ee2a507cc10",
+      "sample_id": 117,
+      "text": " = = Reactions = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "f8903a1d5e5d2f9c88faa7a43c9ccf690fba681f92e7820da906e2deb67101a7",
+      "sample_id": 138,
+      "text": " = = Significance = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "9e087cae37d64f12c51277e8522dd37fbfbb86d6b12c69f7df9e633a5c89c247",
+      "sample_id": 175,
+      "text": " = = Site description = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "78f2f5abb533349cacb10cfc55b825617f21c36309612a46324875c2f426049c",
+      "sample_id": 209,
+      "text": " = = Aftermath = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "76285f3780404b4bb661eafe4687456b72e69c12382dcc65f19e885ea3d3606e",
+      "sample_id": 239,
+      "text": " = = Major intersections = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "29600684569990dcbb2bd8853aac1b9f174f7b3dcd014bf5e506bdc636e06487",
+      "sample_id": 314,
+      "text": " = = Government surveillance = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "1b7522b735f3a3779f6ea01b46a101c29923d91076fa26f5a6507f800d63c079",
+      "sample_id": 315,
+      "text": " = = Personal life = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "d46ff2fbff451277f29c283f867c5b9e9b26aa55faed64cd51c1542d910e98ec",
+      "sample_id": 319,
+      "text": " = = Chart performance = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "c906214b09439837225faf9a6f2eb99d5a1c4db0d0dae48a9e7d70ea48debd32",
+      "sample_id": 350,
+      "text": " = New Jersey Route 29 = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "1b7522b735f3a3779f6ea01b46a101c29923d91076fa26f5a6507f800d63c079",
+      "sample_id": 365,
+      "text": " = = Personal life = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "a8f921e180b9a1c038d03a11949276dc73d4c49d1bbabca61b9bd0bbf48755ac",
+      "sample_id": 368,
+      "text": " = = Route description = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "3718bbbf1ddb6ba5976a49f4d79384d7378a779a2265cc2dbc3a8dfb2d765154",
+      "sample_id": 371,
+      "text": " = = Professional career = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "78f2f5abb533349cacb10cfc55b825617f21c36309612a46324875c2f426049c",
+      "sample_id": 402,
+      "text": " = = Aftermath = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "b74edb833b97cb4214bb6c7334cde0f57080327426097b01a8b45adcfdc67daa",
+      "sample_id": 457,
+      "text": " = = Human uses = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "a8f921e180b9a1c038d03a11949276dc73d4c49d1bbabca61b9bd0bbf48755ac",
+      "sample_id": 488,
+      "text": " = = Route description = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "3aca0f67176c4ab11b166ff8bea8baff655d32dc08878fb6bf03cf5d4ac7c72a",
+      "sample_id": 500,
+      "text": " = = Synopsis = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "78f2f5abb533349cacb10cfc55b825617f21c36309612a46324875c2f426049c",
+      "sample_id": 518,
+      "text": " = = Aftermath = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "23cb2ea0a33fb664ca82df306e1b65771c661b995a915950d4f3882994292f3d",
+      "sample_id": 521,
+      "text": " = = Human consumption = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "cd44d7a160bbcadbbce5949327b0176c17f43a93fe8d7a215dc3e1fc37926ee6",
+      "sample_id": 525,
+      "text": " = = Racing career = = \n",
+      "token_count": 7
+    },
+    {
+      "in_negative_controls": false,
+      "in_supported_S": false,
+      "raw_text_sha256": "76285f3780404b4bb661eafe4687456b72e69c12382dcc65f19e885ea3d3606e",
+      "sample_id": 653,
+      "text": " = = Major intersections = = \n",
+      "token_count": 7
+    }
+  ],
+  "tokenizer": {
+    "add_special_tokens": true,
+    "backend_sha256": "5ff0b34f14254033f0b6557ef3910a535e98ba6b428851fa8648eab18ddf87f2",
+    "bos_token_id": 0,
+    "class": "GPTNeoXTokenizerFast",
+    "config_sha256": "cd8521a250fc22238728a35176771e99e41e3ee129845b8cbb843b168cbd7e41",
+    "eos_token_id": 0,
+    "length_including_added_tokens": 50277,
+    "max_length": 128,
+    "name": "EleutherAI/pythia-160m",
+    "pad_token_id": 0,
+    "padding_side": "right",
+    "revision": "50f5173d932e8e61f858120bcb800b97af589f46",
+    "truncation": true,
+    "vocab_size": 50254
+  },
+  "validation": {
+    "LOW_is_HIGH_minus_U_plus_R": true,
+    "PLACEBO_is_HIGH_minus_P_plus_same_R": true,
+    "R_disjoint_from_official_evaluation_ids": true,
+    "S_count_is_28": true,
+    "U_P_R_counts_are_32": true,
+    "all_target_samples_have_seven_predictions": false,
+    "condition_target_counts_are_200": true,
+    "exact_raw_reconstruction": true,
+    "insufficient_tokens": {
+      "background": [],
+      "target": [
+        52,
+        59,
+        62,
+        74,
+        75,
+        117,
+        138,
+        175,
+        209,
+        239,
+        314,
+        315,
+        319,
+        350,
+        365,
+        368,
+        371,
+        402,
+        457,
+        488,
+        500,
+        518,
+        521,
+        525,
+        653
+      ],
+      "validation": []
+    },
+    "manifest_protocol_invariants": true,
+    "out_partition_count_is_200": true,
+    "passed": false,
+    "shared_wikitext_count_is_15000": true,
+    "unlearn_partition_count_is_200": true
+  }
+}

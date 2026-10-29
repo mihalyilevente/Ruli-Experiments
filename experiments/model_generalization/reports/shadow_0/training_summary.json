@@ -1,0 +1,269 @@
+{
+  "comparison_kind": "fresh_matched_comparison",
+  "original_assignment_reproduced": false,
+  "scope": "One completed research shadow (index 0) per model; not final target evaluation.",
+  "completed_shadows_per_model": 1,
+  "required_shadows_per_model": 9,
+  "ruli_evaluation_available": false,
+  "assignment_sha256": "e5cfe50ce1ac8a040d13c440d2ad75c0a0048a4b521e931be69e05b5d6ce29c8",
+  "models": {
+    "gpt2": {
+      "training_seed": 42,
+      "shadow_index": 0,
+      "runtime_seconds": 1570.6719575660536,
+      "finished_utc": "2026-10-29T20:16:23.556981+00:00",
+      "role_counts": {
+        "IN": 240,
+        "OUT": 222,
+        "UNLEARN": 198
+      },
+      "prediction_policy": {
+        "exception_ids": [],
+        "exceptions": [],
+        "loss_policy": "min(7, seq_len - 1)",
+        "negative_control_count": 121,
+        "negative_controls_all_seven": true,
+        "per_sample_sha256": "bad7bcc1e42215a76039ff6d3ae05bf6c763d272f7904aec130f6fe4606ec315",
+        "primary_all_seven": true,
+        "primary_count": 28
+      },
+      "completed_epochs": {
+        "final_retain_ft": 2.0,
+        "initial_sft": 5.0,
+        "npo": 13.846153846153847,
+        "prefix": 1.0
+      },
+      "validated": true
+    },
+    "pythia-160m": {
+      "training_seed": 42,
+      "shadow_index": 0,
+      "runtime_seconds": 1639.978478,
+      "finished_utc": "2026-10-29T19:50:12.856230+00:00",
+      "role_counts": {
+        "IN": 240,
+        "OUT": 222,
+        "UNLEARN": 198
+      },
+      "prediction_policy": {
+        "exception_ids": [
+          52,
+          59,
+          62,
+          74,
+          75,
+          117,
+          138,
+          175,
+          209,
+          239,
+          314,
+          315,
+          319,
+          350,
+          365,
+          368,
+          371,
+          402,
+          457,
+          488,
+          500,
+          518,
+          521,
+          525,
+          653
+        ],
+        "exceptions": [
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 52,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 59,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 62,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 74,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 75,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 117,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 138,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 175,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 209,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 239,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 314,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 315,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 319,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 350,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 365,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 368,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 371,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 402,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 457,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 488,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 500,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 518,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 521,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 525,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 653,
+            "short_sequence_exception": true
+          }
+        ],
+        "loss_policy": "min(7, seq_len - 1)",
+        "negative_control_count": 121,
+        "negative_controls_all_seven": true,
+        "per_sample_sha256": "681ab8c60a3ad9c3302da7132a62d32fc0ea8e16d8cd497e4d5dba2c12f23408",
+        "primary_all_seven": true,
+        "primary_count": 28
+      },
+      "completed_epochs": {
+        "final_retain_ft": 2.0,
+        "initial_sft": 5.0,
+        "npo": 13.846153846153847,
+        "prefix": 1.0
+      },
+      "validated": true
+    }
+  }
+}

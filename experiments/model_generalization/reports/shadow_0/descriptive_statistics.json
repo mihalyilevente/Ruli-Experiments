@@ -1,0 +1,77 @@
+{
+  "verified_downloads": 21,
+  "statistical_tests_performed": false,
+  "delta_definition": "unlearned_loss - original_loss",
+  "models": {
+    "gpt2": {
+      "IN": {
+        "n": 240,
+        "original_mean": 2.0044521503150463,
+        "unlearned_mean": 1.9579530129830043,
+        "mean_delta": -0.046499137332042056,
+        "median_delta": -0.04028087854385376,
+        "increased_count": 83,
+        "increased_percent": 34.583333333333336,
+        "seven_prediction_n": 240,
+        "seven_prediction_mean_delta": -0.046499137332042056
+      },
+      "OUT": {
+        "n": 222,
+        "original_mean": 2.320831529393389,
+        "unlearned_mean": 2.336569006512831,
+        "mean_delta": 0.015737477119441505,
+        "median_delta": 0.012570708990097046,
+        "increased_count": 132,
+        "increased_percent": 59.45945945945946,
+        "seven_prediction_n": 222,
+        "seven_prediction_mean_delta": 0.015737477119441505
+      },
+      "UNLEARN": {
+        "n": 198,
+        "original_mean": 1.9624525954325993,
+        "unlearned_mean": 2.0299152426722675,
+        "mean_delta": 0.0674626472396682,
+        "median_delta": 0.04962897300720215,
+        "increased_count": 149,
+        "increased_percent": 75.25252525252525,
+        "seven_prediction_n": 198,
+        "seven_prediction_mean_delta": 0.0674626472396682
+      }
+    },
+    "pythia-160m": {
+      "IN": {
+        "n": 240,
+        "original_mean": 1.415669482874364,
+        "unlearned_mean": 1.4780975021227885,
+        "mean_delta": 0.062428019248424484,
+        "median_delta": 0.05825686454772949,
+        "increased_count": 144,
+        "increased_percent": 60.0,
+        "seven_prediction_n": 229,
+        "seven_prediction_mean_delta": 0.06351764863545042
+      },
+      "OUT": {
+        "n": 222,
+        "original_mean": 3.1018845111400157,
+        "unlearned_mean": 3.103059864258981,
+        "mean_delta": 0.0011753531189652177,
+        "median_delta": 0.04604059457778931,
+        "increased_count": 119,
+        "increased_percent": 53.6036036036036,
+        "seven_prediction_n": 212,
+        "seven_prediction_mean_delta": 0.0049385833290387995
+      },
+      "UNLEARN": {
+        "n": 198,
+        "original_mean": 1.4724295315041085,
+        "unlearned_mean": 2.015836572406268,
+        "mean_delta": 0.5434070409021594,
+        "median_delta": 0.44785016775131226,
+        "increased_count": 187,
+        "increased_percent": 94.44444444444444,
+        "seven_prediction_n": 194,
+        "seven_prediction_mean_delta": 0.5457206158370701
+      }
+    }
+  }
+}

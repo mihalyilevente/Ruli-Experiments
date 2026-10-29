@@ -1,0 +1,192 @@
+{
+  "assignment_status": "Not found in inspected project/freeze archive. Original code did not seed Python random before assignment or persist mapping; shadow artifact contains six loss dictionaries only.",
+  "background_cache_token_membership_verified": true,
+  "date": "2026-10-26",
+  "files": [
+    {
+      "bytes": 3297,
+      "path": "pip_freeze.txt",
+      "sha256": "3aecbdabb59592aa65507d6479655fac8e573da81f64e26aa9e481c7ebdbd46e"
+    },
+    {
+      "bytes": 14,
+      "path": "python_version.txt",
+      "sha256": "5b3e43dc38ca01e3f5a7854ba50d4330864b0c1e0f646650b2c78cf072acc366"
+    },
+    {
+      "bytes": 2748986,
+      "path": "shadow9.log",
+      "sha256": "63457bade77de91d2842b702740919d8151c447ce00f5f2e61c557a262412ed5"
+    },
+    {
+      "bytes": 149821,
+      "path": "shadow_9_attack_random_npo_gpt2.pth",
+      "sha256": "272edae999dfb34cc37e1fdf9bcedf0779959049cf6a919968f1cd6e93c9caf9"
+    },
+    {
+      "bytes": 939,
+      "path": "shadow_train.sh",
+      "sha256": "5092868831627e301375ba61de97d7bb0d28de065feccf9971f5b38729bbae2d"
+    },
+    {
+      "bytes": 266672,
+      "path": "selective_dataset_prefixed_smoke_700\\data-00000-of-00001.arrow",
+      "sha256": "0dab28dc6012b1b18cd3254a0b7d200df75201be8a216d4c16dc265f52e14568"
+    },
+    {
+      "bytes": 354,
+      "path": "selective_dataset_prefixed_smoke_700\\dataset_info.json",
+      "sha256": "db27b25a2ce3ad5f8bf4491d2d42dca3cdef292da8489bc36b774a9bab910328"
+    },
+    {
+      "bytes": 247,
+      "path": "selective_dataset_prefixed_smoke_700\\state.json",
+      "sha256": "dafdfc161a329dacfb44670a81f38f7ff99abe50f0bd08addd32edd9b6e3c44d"
+    },
+    {
+      "bytes": 2944,
+      "path": "source\\attack_main.py",
+      "sha256": "c864cd2996aa26b17108c403c1fbd737d3714d71c468349cfa7bb4b7baee46e2"
+    },
+    {
+      "bytes": 2627,
+      "path": "source\\target_data.py",
+      "sha256": "0461b99f3600d07eb1ca5c37ca68eac79ad2a6fcb6f6992db9e5bff9d20b2b06"
+    },
+    {
+      "bytes": 8174,
+      "path": "source\\train_text.py",
+      "sha256": "e242ca61f48a037a20584fac3f9bd488e28744963c52af14dc9cfa4eb3e86515"
+    },
+    {
+      "bytes": 5222,
+      "path": "source\\unlearner.py",
+      "sha256": "5c7f4bc7ba9ee4c04e921dbeb227ec12de7839b5f893b2e4f8795553aa80d4c0"
+    },
+    {
+      "bytes": 23570,
+      "path": "source\\utils.py",
+      "sha256": "b4f67c1708413ce183a873610bf4582f2d17caa9f9973112e83148aed036a729"
+    },
+    {
+      "bytes": 264536,
+      "path": "tokenized_train_subset\\cache-02cb5c482e03dcf3.arrow",
+      "sha256": "e3c5978258d875cde73aa0f7ef2dcfe46f2ba43ad7defcc520f7b121d5b7683f"
+    },
+    {
+      "bytes": 264536,
+      "path": "tokenized_train_subset\\cache-06ac402dc8830b9e.arrow",
+      "sha256": "5f15dcd79f451c7166c48325d9370344b211314d72142a8b43009bebb83bf6fd"
+    },
+    {
+      "bytes": 264536,
+      "path": "tokenized_train_subset\\cache-1427564815d8ca7a.arrow",
+      "sha256": "7c8430955ecee7c38162178a3f4e7a7a3e3db759e602672dce872324e202e0b8"
+    },
+    {
+      "bytes": 266984,
+      "path": "tokenized_train_subset\\cache-355b466057e2e264.arrow",
+      "sha256": "5f651ce4b4cdf2a6c7a383295b22eb1358f6a2ed5b4efe7f0501affd5cf1f18c"
+    },
+    {
+      "bytes": 264536,
+      "path": "tokenized_train_subset\\cache-5ae24ea1d4183562.arrow",
+      "sha256": "ee9f9c87cd1ccc14eb7146b043dbc6e6f9abaae4b24b8e63b537f5fea49cea21"
+    },
+    {
+      "bytes": 12074888,
+      "path": "tokenized_train_subset\\cache-5b6c9a041d2bda8e.arrow",
+      "sha256": "467f3986949c5790339ec5aee577f35151f016f7d836a857233f637e1d8e58e5"
+    },
+    {
+      "bytes": 266984,
+      "path": "tokenized_train_subset\\cache-6a1f335ec9cc9c4b.arrow",
+      "sha256": "a942ea84ac926a90503ab628b200ad420b7d3de867a2182dbfaed375f786e188"
+    },
+    {
+      "bytes": 12074888,
+      "path": "tokenized_train_subset\\cache-7a75db8e21e6fde1.arrow",
+      "sha256": "43b48ab4a0bce21abdb4a74c4d01db907eaa958dc11451872b461b814a77bd59"
+    },
+    {
+      "bytes": 264536,
+      "path": "tokenized_train_subset\\cache-83e7fd6f121560b6.arrow",
+      "sha256": "4f04648828b038ee0b133b903438e47c2a7d6208bec35b0bca0ce1c529c63644"
+    },
+    {
+      "bytes": 12220632,
+      "path": "tokenized_train_subset\\data-00000-of-00001.arrow",
+      "sha256": "86e37cfd596df55b83f60ccc462c4e2496af00e0af62167de3f53b5e04b2ca43"
+    },
+    {
+      "bytes": 1132,
+      "path": "tokenized_train_subset\\dataset_info.json",
+      "sha256": "ee86afc81a3199c65a9550a8f3611e1ac4409ecf9709335458879212177ac488"
+    },
+    {
+      "bytes": 250,
+      "path": "tokenized_train_subset\\state.json",
+      "sha256": "f83cd27131c2190c09c326f6c0c905df787fb7b39bc45fcb63bf5a073c381017"
+    },
+    {
+      "bytes": 13672,
+      "path": "tokenized_valid_subset\\cache-17fa1e77cde72797.arrow",
+      "sha256": "b8b364a35207caf42ed08dd54e32a9b18a41aa072dd83e01ad0be3d0e7a13e65"
+    },
+    {
+      "bytes": 13672,
+      "path": "tokenized_valid_subset\\cache-caf2f2b2ae861a01.arrow",
+      "sha256": "4fb2efaddc74a0aba4121ed7e8d885ce18c71fbe10d8b6b2f5ab0244c083e6c5"
+    },
+    {
+      "bytes": 635496,
+      "path": "tokenized_valid_subset\\data-00000-of-00001.arrow",
+      "sha256": "b970e4af6c74ae4867396afe0a4f35a13a55bfb90394dbe9d2dd3de37672f686"
+    },
+    {
+      "bytes": 1132,
+      "path": "tokenized_valid_subset\\dataset_info.json",
+      "sha256": "ee86afc81a3199c65a9550a8f3611e1ac4409ecf9709335458879212177ac488"
+    },
+    {
+      "bytes": 255,
+      "path": "tokenized_valid_subset\\state.json",
+      "sha256": "0aca6b70d5cc6d52677f855a7c73c75dbe3a05b4109e5dec72dedfc053d693e6"
+    }
+  ],
+  "reference_shadow": {
+    "bytes": 149821,
+    "path": "D:\\Uni\\Research\\Ruli-experiments\\experiments\\model_generalization\\artifacts\\reference_gpt2\\shadow_9_attack_random_npo_gpt2.pth",
+    "sha256": "272edae999dfb34cc37e1fdf9bcedf0779959049cf6a919968f1cd6e93c9caf9"
+  },
+  "reference_target": {
+    "files": [
+      {
+        "bytes": 266672,
+        "path": "data-00000-of-00001.arrow",
+        "sha256": "0dab28dc6012b1b18cd3254a0b7d200df75201be8a216d4c16dc265f52e14568"
+      },
+      {
+        "bytes": 354,
+        "path": "dataset_info.json",
+        "sha256": "db27b25a2ce3ad5f8bf4491d2d42dca3cdef292da8489bc36b774a9bab910328"
+      },
+      {
+        "bytes": 247,
+        "path": "state.json",
+        "sha256": "dafdfc161a329dacfb44670a81f38f7ff99abe50f0bd08addd32edd9b6e3c44d"
+      }
+    ],
+    "path": "D:\\Uni\\Research\\Ruli-experiments\\experiments\\model_generalization\\artifacts\\reference_gpt2\\selective_dataset_prefixed_smoke_700",
+    "storage_sha256": "5cb5ea1116ac08c537e7f4877f850c9ae71c65ebba0894686aede46db4d3dcd5"
+  },
+  "remote_access": "Read and download only; no remote modifications or training",
+  "source_root": "/workspace/Ruli",
+  "upstream_source_matches_after_newline_normalization": {
+    "attack_main.py": true,
+    "train_text.py": true,
+    "unlearner.py": true,
+    "utils.py": true
+  },
+  "validation_cache_token_membership_verified": true
+}

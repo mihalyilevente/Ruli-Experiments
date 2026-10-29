@@ -1,0 +1,6 @@
+artifacts/
+results/
+
+# Machine-specific launchers, process snapshots, and transient logs.
+# Verified, portable exports are retained under reports/ instead.
+operations/

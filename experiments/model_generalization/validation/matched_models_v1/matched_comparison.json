@@ -1,0 +1,303 @@
+{
+  "assignment_file_sha256": "b8c38b95b87a441cd34c061ed8758fdfd7d63ba73c7ddfb3760f35d29b3013c4",
+  "assignment_path": "D:\\Uni\\Research\\Ruli-experiments\\experiments\\model_generalization\\protocol\\matched_models_v1\\assignment_map.json",
+  "assignment_payload_sha256": "e5cfe50ce1ac8a040d13c440d2ad75c0a0048a4b521e931be69e05b5d6ce29c8",
+  "comparison_kind": "fresh_matched_comparison",
+  "models": {
+    "EleutherAI/pythia-160m": {
+      "all_nine_shadow_partitions_sha256": "808bcaf3be712c42e129ce65205cc83acc8b28cafbd22a702878ff86d7140a50",
+      "assignment_payload_sha256": "e5cfe50ce1ac8a040d13c440d2ad75c0a0048a4b521e931be69e05b5d6ce29c8",
+      "data_metadata_sha256": "045a27624e5576401242a9d93401fbaf6a0af76c588c0ff8e7c42d0d1c43b594",
+      "prediction_policy": {
+        "exception_ids": [
+          52,
+          59,
+          62,
+          74,
+          75,
+          117,
+          138,
+          175,
+          209,
+          239,
+          314,
+          315,
+          319,
+          350,
+          365,
+          368,
+          371,
+          402,
+          457,
+          488,
+          500,
+          518,
+          521,
+          525,
+          653
+        ],
+        "exceptions": [
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 52,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 59,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 62,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 74,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 75,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 117,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 138,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 175,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 209,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 239,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 314,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 315,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 319,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 350,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 365,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 368,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 371,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 402,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 457,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 488,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 500,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 518,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 521,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 525,
+            "short_sequence_exception": true
+          },
+          {
+            "input_token_count": 7,
+            "loss_policy": "min(7, seq_len - 1)",
+            "prediction_token_count": 6,
+            "sample_id": 653,
+            "short_sequence_exception": true
+          }
+        ],
+        "loss_policy": "min(7, seq_len - 1)",
+        "negative_control_count": 121,
+        "negative_controls_all_seven": true,
+        "per_sample_sha256": "681ab8c60a3ad9c3302da7132a62d32fc0ea8e16d8cd497e4d5dba2c12f23408",
+        "primary_all_seven": true,
+        "primary_count": 28
+      },
+      "raw_membership_sha256": {
+        "background": "775e4b786e7704b800fd217ffd3d1e3e615f177e2baecc473d09a13b4a06137f",
+        "target": "0d71e7c02209b9dbd2109c671238484d2126858ae4fad39b40bcf8c66f1fd454",
+        "validation": "f668d9f3ba677aab0cc50d84fe2f4cde92ae8e91bc53ed41a384256fb9eccf4d"
+      },
+      "target_tokenized_sha256": "1abea4d2216de2ece509e1b0e62dc24a7ab0ea047ef77f9fef7fbbe9d99e19ca"
+    },
+    "gpt2": {
+      "all_nine_shadow_partitions_sha256": "808bcaf3be712c42e129ce65205cc83acc8b28cafbd22a702878ff86d7140a50",
+      "assignment_payload_sha256": "e5cfe50ce1ac8a040d13c440d2ad75c0a0048a4b521e931be69e05b5d6ce29c8",
+      "data_metadata_sha256": "1ebefd09729f96f5aa322260943b78e2366b2af0a9d08ec3c97ccc55a90b5994",
+      "prediction_policy": {
+        "exception_ids": [],
+        "exceptions": [],
+        "loss_policy": "min(7, seq_len - 1)",
+        "negative_control_count": 121,
+        "negative_controls_all_seven": true,
+        "per_sample_sha256": "bad7bcc1e42215a76039ff6d3ae05bf6c763d272f7904aec130f6fe4606ec315",
+        "primary_all_seven": true,
+        "primary_count": 28
+      },
+      "raw_membership_sha256": {
+        "background": "775e4b786e7704b800fd217ffd3d1e3e615f177e2baecc473d09a13b4a06137f",
+        "target": "0d71e7c02209b9dbd2109c671238484d2126858ae4fad39b40bcf8c66f1fd454",
+        "validation": "f668d9f3ba677aab0cc50d84fe2f4cde92ae8e91bc53ed41a384256fb9eccf4d"
+      },
+      "target_tokenized_sha256": "6f806744bbe23ecb1836768e82026e0700ea4c75641fe47e3b36db5769329aa8"
+    }
+  },
+  "original_assignment_reproduced": false,
+  "passed": true,
+  "per_shadow_counts": {
+    "0": {
+      "IN": 240,
+      "OUT": 222,
+      "UNLEARN": 198
+    },
+    "1": {
+      "IN": 237,
+      "OUT": 186,
+      "UNLEARN": 237
+    },
+    "2": {
+      "IN": 211,
+      "OUT": 219,
+      "UNLEARN": 230
+    },
+    "3": {
+      "IN": 212,
+      "OUT": 226,
+      "UNLEARN": 222
+    },
+    "4": {
+      "IN": 204,
+      "OUT": 218,
+      "UNLEARN": 238
+    },
+    "5": {
+      "IN": 222,
+      "OUT": 212,
+      "UNLEARN": 226
+    },
+    "6": {
+      "IN": 207,
+      "OUT": 233,
+      "UNLEARN": 220
+    },
+    "7": {
+      "IN": 221,
+      "OUT": 212,
+      "UNLEARN": 227
+    },
+    "8": {
+      "IN": 226,
+      "OUT": 252,
+      "UNLEARN": 182
+    }
+  },
+  "protocol_id": "matched_models_v1",
+  "training_started": false
+}

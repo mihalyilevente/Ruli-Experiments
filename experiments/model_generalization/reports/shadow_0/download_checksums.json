@@ -1,0 +1,107 @@
+{
+  "gpt2/shadow_0/losses.json": {
+    "sha256": "11a492edc0fb12ebee4e203f47943bc010ef61ea6aca91c1c3981a5d7168b09e",
+    "bytes": 757370,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/gpt2/shadows/shadow_0/losses.json"
+  },
+  "gpt2/shadow_0/initial_sft_completion.json": {
+    "sha256": "c12bb3073aa230c9aecf82a0ced0cc5bfefb9e8bf5f7d08e1c7a7a8351288c86",
+    "bytes": 4087,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/gpt2/shadows/shadow_0/initial_sft_completion.json"
+  },
+  "gpt2/shadow_0/prefix_completion.json": {
+    "sha256": "e671d56cd1d1ea4bc2d510b402a949393a19ca252eaabb1fe271c649ffea3109",
+    "bytes": 4327,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/gpt2/shadows/shadow_0/prefix_completion.json"
+  },
+  "gpt2/shadow_0/npo_completion.json": {
+    "sha256": "08edf6533cea443e40d10c2ff1372ce94bfc345c6f2fba3745a5768f106a41c4",
+    "bytes": 4120,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/gpt2/shadows/shadow_0/npo_completion.json"
+  },
+  "gpt2/shadow_0/final_retain_ft_completion.json": {
+    "sha256": "84cab86ddb26f9797f5f425b17846441844d0baed21f33f0d154c963acf15096",
+    "bytes": 4312,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/gpt2/shadows/shadow_0/final_retain_ft_completion.json"
+  },
+  "logs/gpt2_shadow_0.log": {
+    "sha256": "b0f4246edccf78c3d53ed3371486648a7e1feccea6295338911b27b6c89245bb",
+    "bytes": 656747,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/gpt2_shadow_0.log"
+  },
+  "provenance/gpt2_preflight.json": {
+    "sha256": "48cad2a14e8d708b31d8f4900586aacad2148ac2fdd6fb8f1b3e8c51d6a68e08",
+    "bytes": 613624,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/validation/matched_models_v1/gpt2_preflight.json"
+  },
+  "pythia-160m/shadow_0/losses.json": {
+    "sha256": "5cfd9d011bdcba119445d270d3b03909b35b2f0eb90c415eb2c9fbdc94691b79",
+    "bytes": 768269,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/losses.json"
+  },
+  "pythia-160m/shadow_0/initial_sft_completion.json": {
+    "sha256": "f55f171c677b8823b8ee42ca0f8ad713d6f521113d0e572f845b79b65b2d4ef7",
+    "bytes": 4087,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/initial_sft_completion.json"
+  },
+  "pythia-160m/shadow_0/prefix_completion.json": {
+    "sha256": "2c34dbeface4df0b2d6673b8c886c8290231f2e404c5cd64b34b272d28b700f8",
+    "bytes": 4334,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/prefix_completion.json"
+  },
+  "pythia-160m/shadow_0/npo_completion.json": {
+    "sha256": "6982b9adb1de517fe2cd96d9b4a8723c331c7e18cb50df6707b0114a6757e20f",
+    "bytes": 4120,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/npo_completion.json"
+  },
+  "pythia-160m/shadow_0/final_retain_ft_completion.json": {
+    "sha256": "c28d9ff35bbda041434a879b5879afbdce3d3e6b8501dabd474ba233ed67b53a",
+    "bytes": 4319,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/final_retain_ft_completion.json"
+  },
+  "logs/pythia-160m_shadow_0.log": {
+    "sha256": "763bac9776ba63cf79ccfb393540e6a4a8c41f8a7160be9af2990a7f680c72cb",
+    "bytes": 739481,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/pythia-160m_shadow_0.log"
+  },
+  "provenance/pythia-160m_preflight.json": {
+    "sha256": "3f7235297e073ec4b599a85bd94e71de16f168edcf2e57c502d825ada78d9b14",
+    "bytes": 624398,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/validation/matched_models_v1/pythia-160m_preflight.json"
+  },
+  "provenance/assignment_map.json": {
+    "sha256": "b8c38b95b87a441cd34c061ed8758fdfd7d63ba73c7ddfb3760f35d29b3013c4",
+    "bytes": 126091,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/protocol/matched_models_v1/assignment_map.json"
+  },
+  "provenance/comparison.json": {
+    "sha256": "dc5b2cd87f8147b19eb7c4ac65508783bf5b9fac424cac5a3c95a383614be11e",
+    "bytes": 1520,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/protocol/matched_models_v1/comparison.json"
+  },
+  "provenance/status.json": {
+    "sha256": "833224e1415726d08182e09bae13a96c43d8f54b7f65af0454263555223e2ad4",
+    "bytes": 1334,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/status.json"
+  },
+  "provenance/environment.json": {
+    "sha256": "363f4d9c4c64e99511f6b1082d82514089910a758769551dde43f668754a7001",
+    "bytes": 1702,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/environment.json"
+  },
+  "provenance/pip_freeze.txt": {
+    "sha256": "485aea4673513a4a25cdb24d9cfeb4adf787c5ee08f1432370963ea5201ab318",
+    "bytes": 3502,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/pip_freeze.txt"
+  },
+  "provenance/matched_comparison.json": {
+    "sha256": "00ddbe5993040c38135d5a239bd0ad6cdbc3b2256a88e0d215fa4d8183c4e2ab",
+    "bytes": 9540,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/matched_comparison.json"
+  },
+  "provenance/launch_note.json": {
+    "sha256": "50faae3b19f8d67481d17b6da23d49c0b7bbb3469f07a5f0d39b693e8726c49d",
+    "bytes": 452,
+    "remote_path": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/launch_note.json"
+  }
+}

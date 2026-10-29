@@ -1,0 +1,8 @@
+{
+  "preflights_passed": true,
+  "capacity_probe_completed": false,
+  "capacity_note": "Helper queue.py collided with stdlib queue during probe imports and launched the authorized pair early. Renamed helper and replaced supervisor without restarting training. Full NPO capacity remains unverified; queue stops on training failure.",
+  "training_pid": 740,
+  "supervisor_pid": 852,
+  "scope": "Only shadow 0 for Pythia, followed by shadow 0 for GPT-2"
+}

@@ -1,0 +1,32 @@
+{
+  "scope": "shadow_0 only for Pythia and GPT-2; stop after these two jobs",
+  "comparison": "fresh_matched_comparison",
+  "pid": 852,
+  "jobs": [
+    {
+      "model": "EleutherAI/pythia-160m",
+      "shadow_index": 0,
+      "started_utc": "2026-10-29T19:22:52.877791+00:00",
+      "state": "completed",
+      "log": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/pythia-160m_shadow_0.log",
+      "pid": 740,
+      "finished_utc": "2026-10-29T19:50:12.856230+00:00",
+      "completion_evidence": "/workspace/Ruli-Experiments/experiments/model_generalization/artifacts/matched_models_v1/pythia-160m/shadows/shadow_0/losses.json",
+      "seconds": 1639.978478
+    },
+    {
+      "model": "gpt2",
+      "shadow_index": 0,
+      "state": "completed",
+      "started_utc": "2026-10-29T19:50:12.871111+00:00",
+      "log": "/workspace/Ruli-Experiments/experiments/model_generalization/operations/cloud_20261029/gpt2_shadow_0.log",
+      "pid": 879,
+      "exit_code": 0,
+      "seconds": 1570.6719575660536,
+      "finished_utc": "2026-10-29T20:16:23.556981+00:00"
+    }
+  ],
+  "state": "completed",
+  "supervisor_note": "Reattached existing Pythia training after renaming a helper that collided with stdlib queue. No research job restarted.",
+  "finished_utc": "2026-10-29T20:16:23.557012+00:00"
+}
